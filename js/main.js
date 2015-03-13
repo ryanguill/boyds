@@ -104,11 +104,16 @@ APP.main = (function main(THREE, Stats, $){
 
 		for (var i = 0; i < 1000; ++i) {
 
-			var squareMesh = createBoydMesh(10);
-			scene.add(squareMesh);
+			var boyd = new Boyd({
+				size: 10,
+				color: new THREE.Color(Math.random(), Math.random(), Math.random())
+			});
 
-			squareMesh.translateX(Math.random() * 1000 - 500);
-			squareMesh.translateY(Math.random() * 1000 - 500);
+			var mesh = boyd.getMesh();
+			scene.add(mesh);
+
+			mesh.translateX(Math.random() * 1000 - 500);
+			mesh.translateY(Math.random() * 1000 - 500);
 
 		}
 
