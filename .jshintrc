@@ -1,0 +1,11 @@
+{
+  "node": false
+  ,"esnext": false
+  ,"globals": ["console" ]
+  ,"quotmark": "double"
+  ,"undef": true
+  ,"unused": true
+  ,"laxcomma": true
+  ,"bitwise": true
+  ,"eqeqeq": true
+}
