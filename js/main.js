@@ -1,8 +1,8 @@
-/*global _, jQuery, THREE, Stats, console, window, document */
+/*global _, jQuery, THREE, Stats, console, window, document, Boyd */
 
 var APP = APP || {};
 
-APP.main = (function main(THREE, Stats, $){
+APP.main = (function main(THREE, Stats, $, simulation){
 	"use strict";
 
 	var stats,
@@ -11,10 +11,10 @@ APP.main = (function main(THREE, Stats, $){
 		camera,
 		renderer;
 
-	var mousedown,
+	var mouseDown,
 		lastMousePos = { x: 0, y: 0 },
 		currentMousePos = { x: 0, y: 0 },
-		keydown = [];
+		keyDown = [];
 
 	var NEAR = 0.1,
 		FAR = 100,
@@ -31,6 +31,10 @@ APP.main = (function main(THREE, Stats, $){
 	var now,
 		lastFrameTime,
 		timeDelta;
+
+	var state = {
+		boyds: []
+	};
 
 	function init() {
 
@@ -62,13 +66,13 @@ APP.main = (function main(THREE, Stats, $){
 		$(window).on("mousedown", function(event) {
 			currentMousePos = {x: event.clientX, y: event.clientY};
 			lastMousePos = currentMousePos;
-			mousedown = true;
+			mouseDown = true;
 		});
 		$(window).on("mouseup mouseleave mouseenter", function() {
-			mousedown = false;
+			mouseDown = false;
 		});
 		$(window).on("mousemove", function (event) {
-			if (mousedown) {
+			if (mouseDown) {
 				currentMousePos = {x: event.clientX, y: event.clientY};
 			}
 		});
@@ -84,11 +88,11 @@ APP.main = (function main(THREE, Stats, $){
 		});
 
 		$(window).on("keydown", function (event) {
-			keydown[event.keyCode] = true;
+			keyDown[event.keyCode] = true;
 		});
 
 		$(window).on("keyup", function (event) {
-			keydown[event.keyCode] = false;
+			keyDown[event.keyCode] = false;
 		});
 
 		$(window).on("contextmenu", function() {
@@ -102,18 +106,20 @@ APP.main = (function main(THREE, Stats, $){
 		camera = createCamera();
 		scene.add(camera);
 
-		for (var i = 0; i < 1000; ++i) {
+		for (var i = 0; i < 100; ++i) {
 
 			var boyd = new Boyd({
 				size: 10,
-				color: new THREE.Color(Math.random(), Math.random(), Math.random())
+				color: new THREE.Color(Math.random(), Math.random(), Math.random()),
+				velocity: new THREE.Vector3(1, 0, 0)
 			});
 
-			var mesh = boyd.getMesh();
-			scene.add(mesh);
+			scene.add(boyd.mesh);
+			boyd.mesh.translateX(Math.random() * 1000 - 500);
 
-			mesh.translateX(Math.random() * 1000 - 500);
-			mesh.translateY(Math.random() * 1000 - 500);
+			boyd.mesh.translateY(Math.random() * 1000 - 500);
+
+			state.boyds.push(boyd);
 
 		}
 
@@ -140,7 +146,9 @@ APP.main = (function main(THREE, Stats, $){
 	function update(delta) {
 
 		// squareMesh.rotation.z += delta * 0.001;
-		
+		state.boyds = simulation.update(delta, state.boyds, WIDTH, HEIGHT);
+
+		//console.log(boyd.mesh);
 
 		updateCameraPosition(delta);
 	}
@@ -155,16 +163,16 @@ APP.main = (function main(THREE, Stats, $){
 
 		var motion = new THREE.Vector3();
 
-		if (keydown["W".charCodeAt(0)]) {
+		if (keyDown["W".charCodeAt(0)]) {
 			motion.y += motionFactor;
 		}
-		if (keydown["S".charCodeAt(0)]) {
+		if (keyDown["S".charCodeAt(0)]) {
 			motion.y -= motionFactor;
 		}
-		if (keydown["A".charCodeAt(0)]) {
+		if (keyDown["A".charCodeAt(0)]) {
 			motion.x -= motionFactor;
 		}
-		if (keydown["D".charCodeAt(0)]) {
+		if (keyDown["D".charCodeAt(0)]) {
 			motion.x += motionFactor;
 		}
 
@@ -184,34 +192,6 @@ APP.main = (function main(THREE, Stats, $){
 		camera.updateProjectionMatrix();
 		
 		renderer.setSize( window.innerWidth, window.innerHeight );
-	}
-
-	function createSquareMesh(width, height) {
-		var squareShape = new THREE.Shape();
-
-		squareShape.moveTo(-width/2,  height/2);
-		squareShape.lineTo( width/2,  height/2);
-		squareShape.lineTo( width/2, -height/2);
-		squareShape.lineTo(-width/2, -height/2);
-		squareShape.lineTo(-width/2,  height/2);
-
-		var squareGeom = new THREE.ShapeGeometry(squareShape);
-		var rectMesh = new THREE.Mesh(squareGeom, new THREE.MeshBasicMaterial({ color: 0xFF0000 }));
-		return rectMesh;
-	}
-
-	function createBoydMesh(size) {
-		var boydShape = new THREE.Shape();
-
-		boydShape.moveTo(      0,  size/2);
-		boydShape.lineTo(-size/2, -size/2);
-		boydShape.lineTo(      0, -size/4);
-		boydShape.lineTo( size/2, -size/2);
-		boydShape.lineTo(      0,  size/2);
-
-		var boydGeom = new THREE.ShapeGeometry(boydShape);
-		var boydMesh = new THREE.Mesh(boydGeom, new THREE.MeshBasicMaterial({ color: 0xFF0000 }));
-		return boydMesh;
 	}
 
 	function zoom(amt) {
@@ -265,4 +245,4 @@ APP.main = (function main(THREE, Stats, $){
 	return {
 		init: init
 	};
-}(THREE, Stats, jQuery));
+}(THREE, Stats, jQuery, APP.simulation));
