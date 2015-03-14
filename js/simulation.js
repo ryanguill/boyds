@@ -61,10 +61,15 @@ APP.simulation = (function simulation() {
 						neighborTotals.count++;
 						neighborTotals.speed += otherBoyd.speed;// / distSq;
 						neighborTotals.heading += otherBoyd.heading;// / distSq;
-/*
-						if (distSq < boyd.tooCloseRangeSq) {
 
-						}*/
+						if (distSq < boyd.tooCloseRangeSq) {
+							var vec = boyd.distVector(otherBoyd);
+							var dir = vec.normalize();
+							var mag = boyd.tooCloseRange - vec.length();
+
+							boyd.addVelocityOffset(dir.multiplyScalar(mag));
+							//boyd.addVelocityOffset(boyd.distVector(otherBoyd));
+						}
 					}
 				}
 			}

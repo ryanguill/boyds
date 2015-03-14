@@ -17,7 +17,7 @@ function Boyd (args) {
 	this.heading = args.heading || DEFAULT_HEADING; //degrees
 	this.neighborRange = args.neighborRange || DEFAULT_NEIGHBOR_RANGE;
 	this.tooCloseRange = args.tooCloseRange || DEFAULT_TOOCLOSE_RANGE;
-
+	this.velocityOffset = new THREE.Vector3(0,0,0);
 	this.didFlip = false;
 
 	var boydShape = new THREE.Shape();
@@ -36,7 +36,13 @@ function Boyd (args) {
 	var neighborRingMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide});
 	this.neighborRingMesh = new THREE.Mesh(neighborRingGeometry, neighborRingMaterial);
 
-	this.mesh.add(this.neighborRingMesh);
+	//this.mesh.add(this.neighborRingMesh);
+
+	var tooCloseRingGeometry = new THREE.RingGeometry(this.tooCloseRange, this.tooCloseRange + 1, 32);
+	var tooCloseRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+	this.tooCloseRingMesh = new THREE.Mesh(tooCloseRingGeometry, tooCloseRingMaterial);
+
+	//this.mesh.add(this.tooCloseRingMesh);
 }
 
 
@@ -73,7 +79,7 @@ Boyd.prototype = {
 		return this._headingRad;
 	},
 	set speed (value) {
-		//this._speed = Math.max(value, 0);
+
 		if (Boyd.normalize(value) !== Boyd.normalize(this._speed)) {
 			if (value < 0) {
 				this._color = new THREE.Color(1, 0, 0);
@@ -83,7 +89,8 @@ Boyd.prototype = {
 			this._didFlip = true;
 			if (this._mesh !== undefined) this._mesh.material = new THREE.MeshBasicMaterial({ color: this._color.getHex() });
 		}
-		this._speed = value;
+		//this._speed = value;
+		this._speed = Math.max(value, 50);
 	},
 	get speed () {
 		return this._speed;
@@ -123,11 +130,16 @@ Boyd.prototype = {
 	get velocity () {
 		return new THREE.Vector3(Math.cos(this._headingRad) * this._speed, Math.sin(this._headingRad) * this._speed, 0);
 	}
+
 };
 
 Boyd.normalize = function (value) {
 	if (value === 0) return 0;
 	return value / Math.abs(value);
+};
+
+Boyd.prototype.addVelocityOffset = function (vector) {
+	this.velocityOffset.add(vector);
 };
 
 Boyd.prototype.update = function (delta) {
@@ -140,15 +152,22 @@ Boyd.prototype.update = function (delta) {
 
 	//this.mesh.position.translateX(velocity.x * delta);
 	//this.mesh.position.translateY(velocity.y * delta);
+	var vel  = this.velocity.sub(this.velocityOffset);
 
-	this.mesh.position.add(this.velocity.multiplyScalar(delta));
-	this.mesh.rotation.z = this.headingRad;
+	this._mesh.position.add(vel.multiplyScalar(delta));
+	this._mesh.rotation.z = this.headingRad;
+
+	this.velocityOffset = new THREE.Vector3(0,0,0);
 };
 
-Boyd.prototype.dist = function(otherBoyd) {
-	return this._mesh.position.clone().sub(otherBoyd.position).length();
+Boyd.prototype.dist = function (otherBoyd) {
+	return otherBoyd.position.clone().sub(this._mesh.position).length();
 };
 
 Boyd.prototype.distSq = function(otherBoyd) {
-	return this._mesh.position.clone().sub(otherBoyd.position).lengthSq();
+	return otherBoyd.position.clone().sub(this._mesh.position).lengthSq();
+};
+
+Boyd.prototype.distVector = function (otherBoyd) {
+	return otherBoyd.position.clone().sub(this._mesh.position);
 };

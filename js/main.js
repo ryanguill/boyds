@@ -115,8 +115,8 @@ APP.main = (function main(THREE, Stats, $, simulation){
 			//new THREE.Color(Math.random(), Math.random(), Math.random()),
 			var boyd = new Boyd({
 				size: 25,
-				speed: plusOrMinus() * 150 * Math.random(),
-				neighborRange: 100 * Math.random(),
+				speed: 200 * Math.random(),
+				neighborRange: 75, // * Math.random()
 				tooCloseRange: 25,
 				heading: -180 * Math.random(),
 				color: new THREE.Color(0x00ff00),
