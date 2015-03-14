@@ -42,7 +42,7 @@ APP.main = (function main(THREE, Stats, $, simulation){
 
 		renderer = new THREE.WebGLRenderer({ antialias: true , alpha: true });
 		renderer.setSize(WIDTH, HEIGHT);
-		renderer.setClearColor(0xFFFFFF, 1);
+		renderer.setClearColor(0x000000, 1);
 
 		document.body.appendChild(renderer.domElement);
 
@@ -100,31 +100,46 @@ APP.main = (function main(THREE, Stats, $, simulation){
 		});
 	}
 
+	//todo move to simulation
 	function initSimulation(config) {
 		config = config || {};
 
 		camera = createCamera();
 		scene.add(camera);
 
-		for (var i = 0; i < 100; ++i) {
+		//var mesh = createSquareMesh(1000, 1000);
+		//scene.add(mesh);
 
+		for (var i = 0; i < 400; ++i) {
+
+			//new THREE.Color(Math.random(), Math.random(), Math.random()),
 			var boyd = new Boyd({
-				size: 10,
-				color: new THREE.Color(Math.random(), Math.random(), Math.random()),
-				velocity: new THREE.Vector3(1, 0, 0)
+				size: 25,
+				speed: plusOrMinus() * 150 * Math.random(),
+				neighborRange: 100 * Math.random(),
+				tooCloseRange: 25,
+				heading: -180 * Math.random(),
+				color: new THREE.Color(0x00ff00),
+				velocity: new THREE.Vector2(1, 0)
 			});
-
 			scene.add(boyd.mesh);
+			//boyd.mesh.add(boyd.neighborhoodRingMesh);
+			//scene.add(boyd.neighborhoodRingMesh);
+
 			boyd.mesh.translateX(Math.random() * 1000 - 500);
 
 			boyd.mesh.translateY(Math.random() * 1000 - 500);
 
 			state.boyds.push(boyd);
-
 		}
 
 
+
 		lastFrameTime = Date.now();
+	}
+
+	function plusOrMinus () {
+		return Math.random() < 0.5 ? 1 : -1;
 	}
 
 	function run() {
@@ -146,7 +161,7 @@ APP.main = (function main(THREE, Stats, $, simulation){
 	function update(delta) {
 
 		// squareMesh.rotation.z += delta * 0.001;
-		state.boyds = simulation.update(delta, state.boyds, WIDTH, HEIGHT);
+		state.boyds = simulation.update(delta, state.boyds, 500, 750, -500, -750);
 
 		//console.log(boyd.mesh);
 
@@ -240,6 +255,19 @@ APP.main = (function main(THREE, Stats, $, simulation){
 		cam.position.z = CAMERA_Z;
 
 		return cam;
+	}
+
+	function createSquareMesh(width, height) {
+		var squareShape = new THREE.Shape();
+
+		squareShape.moveTo(-width/2,  height/2);
+		squareShape.lineTo( width/2,  height/2);
+		squareShape.lineTo( width/2, -height/2);
+		squareShape.lineTo(-width/2, -height/2);
+		squareShape.lineTo(-width/2,  height/2);
+
+		var squareGeom = new THREE.ShapeGeometry(squareShape);
+		return new THREE.Mesh(squareGeom, new THREE.MeshBasicMaterial({ color: 0x000000 }));
 	}
 
 	return {
