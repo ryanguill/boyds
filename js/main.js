@@ -2,7 +2,7 @@
 
 var APP = APP || {};
 
-APP.main = (function main(THREE, Stats, $, simulation){
+APP.main = (function main(THREE, Stats, $, simulation, util){
 	"use strict";
 
 	var stats,
@@ -32,15 +32,15 @@ APP.main = (function main(THREE, Stats, $, simulation){
 		lastFrameTime,
 		timeDelta;
 
-	var state = {
-		boyds: []
+	var info = {
+
 	};
 
 	function init() {
 
 		scene = new THREE.Scene();
 
-		renderer = new THREE.WebGLRenderer({ antialias: true , alpha: true });
+		renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
 		renderer.setSize(WIDTH, HEIGHT);
 		renderer.setClearColor(0x000000, 1);
 
@@ -51,7 +51,7 @@ APP.main = (function main(THREE, Stats, $, simulation){
 			stats.domElement.style.position = "absolute";
 			stats.domElement.style.left = "0px";
 			stats.domElement.style.top = "0px";
-			document.body.appendChild( stats.domElement );
+			document.body.appendChild(stats.domElement);
 		}
 
 		initControls();
@@ -100,46 +100,19 @@ APP.main = (function main(THREE, Stats, $, simulation){
 		});
 	}
 
-	//todo move to simulation
 	function initSimulation(config) {
 		config = config || {};
 
 		camera = createCamera();
 		scene.add(camera);
 
+		//background
 		//var mesh = createSquareMesh(1000, 1000);
 		//scene.add(mesh);
 
-		for (var i = 0; i < 400; ++i) {
-
-			//new THREE.Color(Math.random(), Math.random(), Math.random()),
-			var boyd = new Boyd({
-				size: 25,
-				speed: 200 * Math.random(),
-				neighborRange: 75, // * Math.random()
-				tooCloseRange: 25,
-				heading: -180 * Math.random(),
-				color: new THREE.Color(0x00ff00),
-				velocity: new THREE.Vector2(1, 0)
-			});
-			scene.add(boyd.mesh);
-			//boyd.mesh.add(boyd.neighborhoodRingMesh);
-			//scene.add(boyd.neighborhoodRingMesh);
-
-			boyd.mesh.translateX(Math.random() * 1000 - 500);
-
-			boyd.mesh.translateY(Math.random() * 1000 - 500);
-
-			state.boyds.push(boyd);
-		}
-
-
+		info = simulation.init(config, scene);
 
 		lastFrameTime = Date.now();
-	}
-
-	function plusOrMinus () {
-		return Math.random() < 0.5 ? 1 : -1;
 	}
 
 	function run() {
@@ -161,7 +134,7 @@ APP.main = (function main(THREE, Stats, $, simulation){
 	function update(delta) {
 
 		// squareMesh.rotation.z += delta * 0.001;
-		state.boyds = simulation.update(delta, state.boyds, 500, 750, -500, -750);
+		simulation.update(delta, 500, 750, -500, -750);
 
 		//console.log(boyd.mesh);
 
@@ -257,20 +230,7 @@ APP.main = (function main(THREE, Stats, $, simulation){
 		return cam;
 	}
 
-	function createSquareMesh(width, height) {
-		var squareShape = new THREE.Shape();
-
-		squareShape.moveTo(-width/2,  height/2);
-		squareShape.lineTo( width/2,  height/2);
-		squareShape.lineTo( width/2, -height/2);
-		squareShape.lineTo(-width/2, -height/2);
-		squareShape.lineTo(-width/2,  height/2);
-
-		var squareGeom = new THREE.ShapeGeometry(squareShape);
-		return new THREE.Mesh(squareGeom, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-	}
-
 	return {
 		init: init
 	};
-}(THREE, Stats, jQuery, APP.simulation));
+}(THREE, Stats, jQuery, APP.simulation, APP.util));

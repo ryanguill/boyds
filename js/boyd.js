@@ -90,7 +90,7 @@ Boyd.prototype = {
 			if (this._mesh !== undefined) this._mesh.material = new THREE.MeshBasicMaterial({ color: this._color.getHex() });
 		}
 		//this._speed = value;
-		this._speed = Math.max(value, 50);
+		this._speed = Math.min(Math.max(value, 50), 200);
 	},
 	get speed () {
 		return this._speed;
@@ -144,7 +144,7 @@ Boyd.prototype.addVelocityOffset = function (vector) {
 
 Boyd.prototype.update = function (delta) {
 
-	this._didFlip = false;
+
 
 	//sin(heading) = y / speed
 	//cos(heading) = x / speed
@@ -157,6 +157,7 @@ Boyd.prototype.update = function (delta) {
 	this._mesh.position.add(vel.multiplyScalar(delta));
 	this._mesh.rotation.z = this.headingRad;
 
+	this._didFlip = false;
 	this.velocityOffset = new THREE.Vector3(0,0,0);
 };
 

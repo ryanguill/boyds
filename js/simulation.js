@@ -2,10 +2,39 @@
 
 var APP  = APP || {};
 
-APP.simulation = (function simulation() {
+APP.simulation = (function simulation(util) {
     "use strict";
 
-	function update (delta, boyds, top, right, bottom, left) {
+	var state = {
+		boyds: []
+	};
+
+	function init (config, scene) {
+		for (var i = 0; i < 400; ++i) {
+
+			//new THREE.Color(Math.random(), Math.random(), Math.random()),
+			var boyd = new Boyd({
+				size: 25,
+				speed: 200 * Math.random(),
+				neighborRange: 150 * Math.random(),
+				tooCloseRange: 25,
+				heading: -180 * Math.random(),
+				color: new THREE.Color(0x00ff00),
+				velocity: new THREE.Vector2(1, 0)
+			});
+
+			scene.add(boyd.mesh);
+
+			//randomize first position
+			boyd.mesh.translateX(Math.random() * 1000 - 500);
+			boyd.mesh.translateY(Math.random() * 1000 - 500);
+
+
+			state.boyds.push(boyd);
+		}
+	}
+
+	function update (delta, top, right, bottom, left) {
 
 		delta /= 1000;
 
@@ -17,16 +46,19 @@ APP.simulation = (function simulation() {
 			speed: 0,
 			heading: 0
 		},
+		info = {
+
+		},
 		i = 0,
 		boyd,
-		boydsLen = boyds.length;
+		boydsLen = state.boyds.length;
 
 
-		var speedChange = 0.5;
-		var headingChange = 2;
+		var acceleration = 7;
+		var headingChange = 6;
 
 		for (i = 0; i < boydsLen; i++) {
-			boyd = boyds[i];
+			boyd = state.boyds[i];
 			totals.speed += boyd.speed;
 			totals.heading += boyd.heading;
 		}
@@ -35,7 +67,7 @@ APP.simulation = (function simulation() {
 		avg.heading = totals.heading / boydsLen;
 
 		for (i = 0; i < boydsLen; i++) {
-			boyd = boyds[i];
+			boyd = state.boyds[i];
 
 			//console.log("b", boyd.mesh.position);
 			//boyd.mesh.translateX(delta * trend(0.5, 0.1));
@@ -54,7 +86,7 @@ APP.simulation = (function simulation() {
 				count: 0
 			};
 			for (var j = 0; j < boydsLen; j++) {
-				var otherBoyd = boyds[j];
+				var otherBoyd = state.boyds[j];
 				if (otherBoyd !== boyd) {
 					var distSq = boyd.distSq(otherBoyd);
 					if (distSq < boyd.neighborRangeSq) {
@@ -75,11 +107,11 @@ APP.simulation = (function simulation() {
 			}
 
 			if (neighborTotals.count > 0) {
-				boyd.speed += (neighborTotals.speed / neighborTotals.count > boyd.speed ? speedChange : -speedChange);
+				boyd.speed += (neighborTotals.speed / neighborTotals.count > boyd.speed ? acceleration : -acceleration);
 				boyd.heading += (neighborTotals.heading / neighborTotals.count > boyd.heading ? headingChange : -headingChange);
 			}
 
-			//boyd.speed += (avg.speed > boyd.speed ? speedChange : -speedChange);
+			//boyd.speed += (avg.speed > boyd.speed ? acceleration : -acceleration);
 			//boyd.heading += (avg.heading > boyd.heading ? headingChange : -headingChange);
 
 			//var didFlip = boyd.didFlip;
@@ -89,13 +121,6 @@ APP.simulation = (function simulation() {
 
 
 			//wrap around
-			/*if (Math.abs(boyd.mesh.position.x) > Math.abs(width)) {
-				boyd.mesh.position.x = -1 * _.min(boyd.mesh.position.x, width);
-			}
-			if (Math.abs(boyd.mesh.position.y) > Math.abs(height)) {
-				boyd.mesh.position.y *= -1;
-			}*/
-
 			if (boyd.position.x >= right) {
 				boyd.position.x = left;
 			} else if (boyd.position.x < left) {
@@ -109,25 +134,13 @@ APP.simulation = (function simulation() {
 			}
 		}
 
-
-		return boyds;
+		return info;
 	}
 
-	function plusOrMinus () {
-		return Math.random() <= 0.4 ? 1 : -1;
-	}
-
-	function trend (volatility, value) {
-		var rnd = Math.random(); // generate number, 0 <= x < 1.0
-		var change_percent = 2 * volatility * rnd;
-		if (change_percent > volatility)
-		    change_percent -= (2 * volatility);
-		var change_amount = value * change_percent;
-		return value + change_amount;
-	}
 
     return {
+	    init: init,
 		update: update
     };
 
-}());
+}(APP.util));
