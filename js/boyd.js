@@ -24,7 +24,7 @@ function Boyd (args) {
 	this.headingChange = args.headingChange || DEFAULT_HEADING_CHANGE;
 
 	this.velocityOffset = new THREE.Vector3(0,0,0);
-	this.didFlip = false;
+
 	this.type = args.type || "PREY";
 
 	this.avoidRangeSimilar = args.avoidRangeSimilar || DEFAULT_AVOID_RANGE_SIMILAR;
@@ -105,7 +105,7 @@ Boyd.prototype = {
 			} else {
 				this._color = new THREE.Color(0, 1, 0);
 			}
-			this._didFlip = true;
+
 			if (this._mesh !== undefined) this._mesh.material = new THREE.MeshBasicMaterial({ color: this._color.getHex() });
 		}*/
 		//this._speed = value;
@@ -113,12 +113,6 @@ Boyd.prototype = {
 	},
 	get speed () {
 		return this._speed;
-	},
-	set didFlip (value) {
-		this._didFlip = value;
-	},
-	get didFlip () {
-		return this._didFlip;
 	},
 	set influenceRange (value) {
 		this._influenceRange = Math.max(value, this._size);
@@ -200,8 +194,6 @@ Boyd.prototype.addVelocityOffset = function (vector) {
 Boyd.prototype.update = function (delta) {
 	var vel  = this.velocity.sub(this.velocityOffset);
 
-	this.arrowHelper.setDirection(this.velocityOffset.clone().normalize());
-	this.arrowHelper.setLength(this.velocityOffset.length());
 
    	var headingTarget = THREE.Math.radToDeg(Math.atan2(vel.y, vel.x));
   	var headingDiff = headingTarget - this.heading;
@@ -212,12 +204,12 @@ Boyd.prototype.update = function (delta) {
   
   	this.heading += avoidanceHeading;
     
-  	
+	this.arrowHelper.setDirection(this.velocity.clone().normalize());
+	this.arrowHelper.setLength(this.velocity.length());
 
 	this._mesh.position.add(this.velocity.multiplyScalar(delta));
 	this._mesh.rotation.z = this.headingRad;
 
-	this._didFlip = false;
 	this.velocityOffset = new THREE.Vector3(0,0,0);
 };
 
@@ -230,5 +222,8 @@ Boyd.prototype.distSq = function(otherBoyd) {
 };
 
 Boyd.prototype.distVector = function (otherBoyd) {
+	//+/- current position with width and height
+	//think about rollover
+
 	return otherBoyd.position.clone().sub(this._mesh.position);
 };
