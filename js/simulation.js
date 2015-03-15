@@ -18,7 +18,7 @@ APP.simulation = (function simulation(util) {
 			boyd = new Boyd({
 				size: 25,
 				speed: 200 * Math.random(),
-				influenceRange: 150 * Math.random(),
+				influenceRange: 50,//150 * Math.random(),
 				avoidRangeSimilar: 25,
 				avoidRangeDifferent: 200,
 				heading: -180 * Math.random(),
@@ -113,14 +113,23 @@ APP.simulation = (function simulation(util) {
 				speed: 0,
 				heading: 0,
 				position: new THREE.Vector3(0, 0, 0),
-				count: 0
+				count: 0,
+              	avoidanceCount: 0
 			};
 			for (var j = 0; j < boydsLen; j++) {
 				var otherBoyd = state.boyds[j];
 				if (otherBoyd !== boyd) {
-					var distVect = boyd.distVector(otherBoyd);
+					var distVect = boyd.distVector(otherBoyd);//<-
 					var distSq = distVect.lengthSq();
-					if (distSq < boyd.influenceRangeSq) {
+                  	var avoidanceRangeSq = boyd.type === otherBoyd.type ? boyd.avoidRangeSimilarSq : boyd.avoidRangeDifferentSq;
+                  	//if (boyd.isPrey) console.log(avoidanceRangeSq);
+                    //console.log(this.isPrey);
+					if (distSq < avoidanceRangeSq) {
+                        neighborTotals.avoidanceCount++;
+                      	var gradient = (avoidanceRangeSq / distSq) * 100;
+                      //console.log(gradient);
+						boyd.addVelocityOffset(distVect.normalize().multiplyScalar(gradient));
+					} else if (distSq < boyd.influenceRangeSq) {
 						neighborTotals.count++;
 						if (boyd.type === otherBoyd.type) {
 							neighborTotals.speed += otherBoyd.speed;// / distSq;
@@ -129,19 +138,16 @@ APP.simulation = (function simulation(util) {
 						} else {
 							neighborTotals.speed += otherBoyd.speed;// / distSq;
 							//todo: this is close, but not really right
-							neighborTotals.heading += (-90) + otherBoyd.heading;// / distSq;
+							//neighborTotals.heading += (-90) + otherBoyd.heading;// / distSq;
 
 						}
 					}
 
 					//console.log(boyd.type === otherBoyd.type);
-					if (distSq < (boyd.type === otherBoyd.type ? boyd.avoidRangeSimilarSq : boyd.avoidRangeDifferentSq)) {
-						boyd.addVelocityOffset(distVect);
-					}
 				}
 			}
 
-			if (neighborTotals.count > 0) {
+			if (neighborTotals.avoidanceCount === 0 && neighborTotals.count > 0) {
 				//console.log(boyd.acceleration);
 				boyd.speed += (neighborTotals.speed / neighborTotals.count > boyd.speed ? boyd.acceleration : -boyd.acceleration);
 				boyd.heading += (neighborTotals.heading / neighborTotals.count > boyd.heading ? boyd.headingChange : -boyd.headingChange);

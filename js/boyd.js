@@ -46,13 +46,22 @@ function Boyd (args) {
 	var influenceRangeRingMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide});
 	this.influenceRangeRingMesh = new THREE.Mesh(influenceRangeRingGeometry, influenceRangeRingMaterial);
 
-	this.mesh.add(this.influenceRangeRingMesh);
+	this._mesh.add(this.influenceRangeRingMesh);
 
 	var avoidRangeSimilarRingGeometry = new THREE.RingGeometry(this.avoidRangeSimilar, this.avoidRangeSimilar + 1, 32);
 	var avoidRangeSimilarRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
 	this.avoidRangeSimilarRingMesh = new THREE.Mesh(avoidRangeSimilarRingGeometry, avoidRangeSimilarRingMaterial);
 
 	//this.mesh.add(this.avoidRangeSimilarRingMesh);
+  
+  	var avoidRangeDifferentRingGeometry = new THREE.RingGeometry(this.avoidRangeDifferent, this.avoidRangeDifferent + 1, 32);
+	var avoidRangeDifferentRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+	this.avoidRangeDifferentRingMesh = new THREE.Mesh(avoidRangeDifferentRingGeometry, avoidRangeDifferentRingMaterial);
+
+	this._mesh.add(this.avoidRangeDifferentRingMesh);
+
+	this.arrowHelper = new THREE.ArrowHelper( this.velocityOffset.clone().normalize(), new THREE.Vector3(0,0,0), this.velocityOffset.length(), 0xff0000 );
+	this._mesh.add(this.arrowHelper);
 }
 
 
@@ -166,12 +175,14 @@ Boyd.prototype = {
 		this._acceleration = Math.max(value, 0);
 	},
 	get acceleration () {
+		//todo: could make this a random number between 1 and the max...
 		return this._acceleration;
 	},
 	set headingChange (value) {
 		this._headingChange = Math.max(value, 0);
 	},
 	get headingChange () {
+		//todo: could make this a random number between 1 and the max...
 		return this._headingChange;
 	}
 
@@ -187,20 +198,23 @@ Boyd.prototype.addVelocityOffset = function (vector) {
 };
 
 Boyd.prototype.update = function (delta) {
-
-
-
-	//sin(heading) = y / speed
-	//cos(heading) = x / speed
-	//have to use a vec3 because position.add is expecting a vec3
-
-	//this.mesh.position.translateX(velocity.x * delta);
-	//this.mesh.position.translateY(velocity.y * delta);
 	var vel  = this.velocity.sub(this.velocityOffset);
 
-	//todo: this isnt right, we arent trying to translate, to this offset, we are trying to steer towards it
-	//console.log(vel.multiplyScalar(delta));
-	this._mesh.position.add(vel.multiplyScalar(delta));
+	this.arrowHelper.setDirection(this.velocityOffset.clone().normalize());
+	this.arrowHelper.setLength(this.velocityOffset.length());
+
+   	var headingTarget = THREE.Math.radToDeg(Math.atan2(vel.y, vel.x));
+  	var headingDiff = headingTarget - this.heading;
+  	var avoidanceHeading = Boyd.normalize(headingDiff) * this.headingChange;
+  	if (this.isPredator) {
+    	avoidanceHeading *= -1;
+  	}
+  
+  	this.heading += avoidanceHeading;
+    
+  	
+
+	this._mesh.position.add(this.velocity.multiplyScalar(delta));
 	this._mesh.rotation.z = this.headingRad;
 
 	this._didFlip = false;
