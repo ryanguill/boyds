@@ -4,21 +4,31 @@
 function Boyd (args) {
 	args = args || {};
 
-	var DEFAULT_SIZE = 1,
+	var DEFAULT_SIZE = 25,
 		DEFAULT_COLOR = new THREE.Color(1, 0, 0),
 		DEFAULT_SPEED = 50,
 		DEFAULT_HEADING = 0,
-		DEFAULT_NEIGHBOR_RANGE = 100,
-		DEFAULT_TOOCLOSE_RANGE = 1;
+		DEFAULT_INFLUENCE_RANGE = 100,
+		DEFAULT_AVOID_RANGE_SIMILAR = 25,
+		DEFAULT_AVOID_RANGE_DIFFERENT = 0,
+		DEFAULT_ACCELERATION = 7,
+		DEFAULT_HEADING_CHANGE = 5;
+
 
 	this.size = args.size || DEFAULT_SIZE;
 	this.color = args.color || DEFAULT_COLOR;
 	this.speed = args.speed || DEFAULT_SPEED;
 	this.heading = args.heading || DEFAULT_HEADING; //degrees
-	this.neighborRange = args.neighborRange || DEFAULT_NEIGHBOR_RANGE;
-	this.tooCloseRange = args.tooCloseRange || DEFAULT_TOOCLOSE_RANGE;
+	this.influenceRange = args.influenceRange || DEFAULT_INFLUENCE_RANGE;
+	this.acceleration = args.acceleration || DEFAULT_ACCELERATION;
+	this.headingChange = args.headingChange || DEFAULT_HEADING_CHANGE;
+
 	this.velocityOffset = new THREE.Vector3(0,0,0);
 	this.didFlip = false;
+	this.type = args.type || "PREY";
+
+	this.avoidRangeSimilar = args.avoidRangeSimilar || DEFAULT_AVOID_RANGE_SIMILAR;
+	this.avoidRangeDifferent = args.avoidRangeDifferent || DEFAULT_AVOID_RANGE_DIFFERENT;
 
 	var boydShape = new THREE.Shape();
 	
@@ -32,17 +42,17 @@ function Boyd (args) {
 	var material = new THREE.MeshBasicMaterial({ color: this.color.getHex() });
 	this.mesh = new THREE.Mesh(geometry, material);
 
-	var neighborRingGeometry = new THREE.RingGeometry(this.neighborRange, this.neighborRange + 1, 32);
-	var neighborRingMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide});
-	this.neighborRingMesh = new THREE.Mesh(neighborRingGeometry, neighborRingMaterial);
+	var influenceRangeRingGeometry = new THREE.RingGeometry(this.influenceRange, this.influenceRange + 1, 32);
+	var influenceRangeRingMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide});
+	this.influenceRangeRingMesh = new THREE.Mesh(influenceRangeRingGeometry, influenceRangeRingMaterial);
 
-	//this.mesh.add(this.neighborRingMesh);
+	this.mesh.add(this.influenceRangeRingMesh);
 
-	var tooCloseRingGeometry = new THREE.RingGeometry(this.tooCloseRange, this.tooCloseRange + 1, 32);
-	var tooCloseRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
-	this.tooCloseRingMesh = new THREE.Mesh(tooCloseRingGeometry, tooCloseRingMaterial);
+	var avoidRangeSimilarRingGeometry = new THREE.RingGeometry(this.avoidRangeSimilar, this.avoidRangeSimilar + 1, 32);
+	var avoidRangeSimilarRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+	this.avoidRangeSimilarRingMesh = new THREE.Mesh(avoidRangeSimilarRingGeometry, avoidRangeSimilarRingMaterial);
 
-	//this.mesh.add(this.tooCloseRingMesh);
+	//this.mesh.add(this.avoidRangeSimilarRingMesh);
 }
 
 
@@ -80,7 +90,7 @@ Boyd.prototype = {
 	},
 	set speed (value) {
 
-		if (Boyd.normalize(value) !== Boyd.normalize(this._speed)) {
+		/*if (Boyd.normalize(value) !== Boyd.normalize(this._speed)) {
 			if (value < 0) {
 				this._color = new THREE.Color(1, 0, 0);
 			} else {
@@ -88,7 +98,7 @@ Boyd.prototype = {
 			}
 			this._didFlip = true;
 			if (this._mesh !== undefined) this._mesh.material = new THREE.MeshBasicMaterial({ color: this._color.getHex() });
-		}
+		}*/
 		//this._speed = value;
 		this._speed = Math.min(Math.max(value, 50), 200);
 	},
@@ -101,34 +111,68 @@ Boyd.prototype = {
 	get didFlip () {
 		return this._didFlip;
 	},
-	set neighborRange (value) {
-		this._neighborRange = Math.max(value, this._size);
-		this._neighborRangeSq = this._neighborRange * this._neighborRange;
+	set influenceRange (value) {
+		this._influenceRange = Math.max(value, this._size);
+		this._influenceRangeSq = this._influenceRange * this._influenceRange;
 	},
-	get neighborRange () {
-		return this._neighborRange;
+	get influenceRange () {
+		return this._influenceRange;
 	},
-	get neighborRangeSq () {
-		return this._neighborRangeSq;
+	get influenceRangeSq () {
+		return this._influenceRangeSq;
 	},
-	set neighborRingMesh (value) {
-		this._neighborRingMesh = value;
+	set influenceRangeRingMesh (value) {
+		this._influenceRangeRingMesh = value;
 	},
-	get neighborRingMesh () {
-		return this._neighborRingMesh;
+	get influenceRangeRingMesh () {
+		return this._influenceRangeRingMesh;
 	},
-	set tooCloseRange (value) {
-		this._tooClose = Math.max(value, 1);
-		this._tooCloseSq = this._tooClose * this._tooClose;
+	set avoidRangeSimilar (value) {
+		this._avoidRangeSimilar = Math.max(value, 1);
+		this._avoidRangeSimilarSq = this._avoidRangeSimilar * this._avoidRangeSimilar;
 	},
-	get tooCloseRange () {
-		return this._tooClose;
+	get avoidRangeSimilar () {
+		return this._avoidRangeSimilar;
 	},
-	get tooCloseRangeSq () {
-		return this._tooCloseSq;
+	get avoidRangeSimilarSq () {
+		return this._avoidRangeSimilarSq;
+	},
+	set avoidRangeDifferent (value) {
+		this._avoidRangeDifferent = Math.max(value, 1);
+		this._avoidRangeDifferentSq = this._avoidRangeDifferent * this._avoidRangeDifferent;
+	},
+	get avoidRangeDifferent () {
+		return this._avoidRangeDifferent;
+	},
+	get avoidRangeDifferentSq () {
+		return this._avoidRangeDifferentSq;
 	},
 	get velocity () {
 		return new THREE.Vector3(Math.cos(this._headingRad) * this._speed, Math.sin(this._headingRad) * this._speed, 0);
+	},
+	set type (value) {
+		this._type = value;
+	},
+	get type () {
+		return this._type;
+	},
+	get isPrey () {
+		return this._type === "PREY";
+	},
+	get isPredator () {
+		return this._type === "PREDATOR";
+	},
+	set acceleration (value) {
+		this._acceleration = Math.max(value, 0);
+	},
+	get acceleration () {
+		return this._acceleration;
+	},
+	set headingChange (value) {
+		this._headingChange = Math.max(value, 0);
+	},
+	get headingChange () {
+		return this._headingChange;
 	}
 
 };
@@ -154,6 +198,8 @@ Boyd.prototype.update = function (delta) {
 	//this.mesh.position.translateY(velocity.y * delta);
 	var vel  = this.velocity.sub(this.velocityOffset);
 
+	//todo: this isnt right, we arent trying to translate, to this offset, we are trying to steer towards it
+	//console.log(vel.multiplyScalar(delta));
 	this._mesh.position.add(vel.multiplyScalar(delta));
 	this._mesh.rotation.z = this.headingRad;
 
