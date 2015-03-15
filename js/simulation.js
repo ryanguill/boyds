@@ -12,8 +12,7 @@ APP.simulation = (function simulation(util) {
 	function init (config, scene) {
 		var boyd;
 
-		//todo: preycount
-		for (var i = 0; i < 100; ++i) {
+		for (var i = 0; i < config.preyCount; ++i) {
 
 			//new THREE.Color(Math.random(), Math.random(), Math.random()),
 			boyd = new Boyd({
@@ -39,14 +38,14 @@ APP.simulation = (function simulation(util) {
 
 			state.boyds.push(boyd);
 		}
-		//todo: predator count
-		for (var j = 0; j < 2; ++j) {
+
+		for (var j = 0; j < config.predatorCount; ++j) {
 
 			//new THREE.Color(Math.random(), Math.random(), Math.random()),
 			boyd = new Boyd({
 				size: 35,
 				speed: 200 * Math.random(),
-				influenceRange: 400,
+				influenceRange: 600,
 				avoidRangeSimilar: 25,
 				avoidRangeDifferent: 0,
 				heading: -180 * Math.random(),
@@ -129,11 +128,9 @@ APP.simulation = (function simulation(util) {
 							//neighborTotals.position.add(otherBoyd.position);
 						} else {
 							neighborTotals.speed += otherBoyd.speed;// / distSq;
-							if (boyd.isPrey) {
-								neighborTotals.heading += 180 + otherBoyd.heading;// / distSq;
-							} else {
-								neighborTotals.heading += otherBoyd.heading;// / distSq;
-							}
+							//todo: this is close, but not really right
+							neighborTotals.heading += (-90) + otherBoyd.heading;// / distSq;
+
 						}
 					}
 

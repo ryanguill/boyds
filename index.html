@@ -10,12 +10,63 @@
 				width: 100%; 
 				height: 100%;
 			}
+            #inputParams {
+                position: absolute;
+                bottom: 10px;
+                left: 10px;
+                padding: 10px;
+                height: 10px;
+				background-color: #efefef;
+				overflow: hidden;
+				border: 1px solid #cfcfcf;
+            }
+            div.showHideContainer {
+				position: absolute;
+				top: 7px;
+				right: 7px;
+				font-size: 12px;
+				padding: 5px;
+				border: 1px solid #bfbfbf;
+				border-radius: 2px;
+				cursor: pointer;
+			}
+
+			div#simulationStats {
+				position: absolute;
+				top: 10px;
+				right: 10px;
+				border-radius: 2px;
+				padding: 10px;
+				background-color: #efefef;
+				overflow: hidden;
+				border: 1px solid #cfcfcf;
+			}
 		</style>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.5.0/lodash.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.11/seedrandom.min.js"></script>
 	</head>
 	<body>
+        <div id="simulationStats">
+			<table>
+
+			</table>
+
+		</div>
+        <div id="inputParams">
+			<div class="title">Settings:</div>
+			<div class="showHideContainer" id="showHideSettings">Show/Hide</div>
+
+			<table>
+				<tr>
+					<td style="text-align: right;">Particle Count</td>
+					<td><input type="text" value="" id="numParticles" class="textInput" /></td>
+					<td>&nbsp;</td>
+				</tr>
+
+			</table>
+		</div>
+
 		<script>
 			var APP = {};
 		</script>
@@ -23,6 +74,13 @@
 		<script src="js/lib/Stats.js"></script>
 		<script src="js/lib/threejs-r70/three.min.js"></script>
 
+		<script src="js/Config.js"></script>
+
+        <script>
+            APP.config = new Config();
+        </script>
+
+		<script src="js/controls.js"></script>
 		<script src="js/util.js"></script>
 		<script src="js/boyd.js"></script>
 		<script src="js/simulation.js"></script>

@@ -2,7 +2,7 @@
 
 var APP = APP || {};
 
-APP.main = (function main(THREE, Stats, $, simulation, util){
+APP.main = (function main(THREE, Stats, $, simulation, config, util){
 	"use strict";
 
 	var stats,
@@ -100,7 +100,7 @@ APP.main = (function main(THREE, Stats, $, simulation, util){
 		});
 	}
 
-	function initSimulation(config) {
+	function initSimulation() {
 		config = config || {};
 
 		camera = createCamera();
@@ -233,4 +233,4 @@ APP.main = (function main(THREE, Stats, $, simulation, util){
 	return {
 		init: init
 	};
-}(THREE, Stats, jQuery, APP.simulation, APP.util));
+}(THREE, Stats, jQuery, APP.simulation, APP.config, APP.util));
