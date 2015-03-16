@@ -18,7 +18,7 @@ APP.simulation = (function simulation(util) {
 			boyd = new Boyd({
 				size: 25,
 				speed: 200 * Math.random(),
-				influenceRange: 50,//150 * Math.random(),
+				influenceRange: 75,//150 * Math.random(),
 				avoidRangeSimilar: 25,
 				avoidRangeDifferent: 200,
 				heading: -180 * Math.random(),

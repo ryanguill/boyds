@@ -60,10 +60,11 @@ function Boyd (args) {
 
 	this._mesh.add(this.avoidRangeDifferentRingMesh);
 
-	this.vectorArrow = new THREE.ArrowHelper( this.velocityOffset.clone().normalize(), new THREE.Vector3(0,0,0), this.velocityOffset.length(), 0xff0000 );
+	//this.vectorArrow = new THREE.ArrowHelper( this.velocityOffset.clone().normalize(), new THREE.Vector3(0,0,0), this.velocityOffset.length(), 0xff0000 );
 	//this._mesh.add(this.vectorArrow);
 
 	var vectorLineGeometry = new THREE.Geometry();
+	vectorLineGeometry.dynamic = true;
 	var vectorLineMaterial = new THREE.LineBasicMaterial({color: 0xFF0000});
 	this.vectorLine = new THREE.Line(vectorLineGeometry, vectorLineMaterial);
 	this._mesh.add(this.vectorLine);
@@ -198,27 +199,22 @@ Boyd.prototype.addVelocityOffset = function (vector) {
 };
 
 Boyd.prototype.update = function (delta) {
-	/*var vel  = this.velocity.sub(this.velocityOffset);
-
+	var vel  = this.velocity.sub(this.velocityOffset);
 
    	var headingTarget = THREE.Math.radToDeg(Math.atan2(vel.y, vel.x));
   	var headingDiff = headingTarget - this.heading;
   	var avoidanceHeading = Boyd.normalize(headingDiff) * this.headingChange;
   	if (this.isPredator) {
     	avoidanceHeading *= -1;
-  	}*/
+  	}
   
-  	//this.heading += avoidanceHeading;
-    
-	//this.vectorArrow.setDirection(this.velocity.clone().normalize());
-	//this.vectorArrow.setLength(this.velocity.length());
+  	this.heading += avoidanceHeading;
 
 	this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed)];
 	this.vectorLine.geometry.verticesNeedUpdate = true;
 
-	this._mesh.position.add(this.velocity.multiplyScalar(delta));
+	this._mesh.position.add(vel.multiplyScalar(delta));
 	this._mesh.rotation.z = this.headingRad;
-
 
 	this.velocityOffset = new THREE.Vector3(0,0,0);
 };
