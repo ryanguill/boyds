@@ -213,18 +213,11 @@ Boyd.prototype.update = function (delta) {
 	//this.vectorArrow.setDirection(this.velocity.clone().normalize());
 	//this.vectorArrow.setLength(this.velocity.length());
 
-	var vel = this.velocity.clone();
-
 	this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed)];
 	this.vectorLine.geometry.verticesNeedUpdate = true;
-	//console.log(verts);
 
-	//console.log(this.velocity);
-
-
+	this._mesh.position.add(this.velocity.multiplyScalar(delta));
 	this._mesh.rotation.z = this.headingRad;
-	this._mesh.position.add(new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed * delta));
-
 
 
 	this.velocityOffset = new THREE.Vector3(0,0,0);
