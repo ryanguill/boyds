@@ -60,8 +60,14 @@ function Boyd (args) {
 
 	this._mesh.add(this.avoidRangeDifferentRingMesh);
 
-	this.arrowHelper = new THREE.ArrowHelper( this.velocityOffset.clone().normalize(), new THREE.Vector3(0,0,0), this.velocityOffset.length(), 0xff0000 );
-	this._mesh.add(this.arrowHelper);
+	this.vectorArrow = new THREE.ArrowHelper( this.velocityOffset.clone().normalize(), new THREE.Vector3(0,0,0), this.velocityOffset.length(), 0xff0000 );
+	//this._mesh.add(this.vectorArrow);
+
+	var vectorLineGeometry = new THREE.Geometry();
+	var vectorLineMaterial = new THREE.LineBasicMaterial({color: 0xFF0000});
+	this.vectorLine = new THREE.Line(vectorLineGeometry, vectorLineMaterial);
+	this._mesh.add(this.vectorLine);
+
 }
 
 
@@ -88,7 +94,7 @@ Boyd.prototype = {
 		return this._mesh;
 	},
 	set heading (value) {
-		this._heading = (value < 0 ? 360 + value : value);
+		this._heading = (value < 0 ? 360 + value : value) % 360;
 		this._headingRad = THREE.Math.degToRad(this._heading);
 	},
 	get heading () {
@@ -150,9 +156,6 @@ Boyd.prototype = {
 	get avoidRangeDifferentSq () {
 		return this._avoidRangeDifferentSq;
 	},
-	get velocity () {
-		return new THREE.Vector3(Math.cos(this._headingRad) * this._speed, Math.sin(this._headingRad) * this._speed, 0);
-	},
 	set type (value) {
 		this._type = value;
 	},
@@ -178,6 +181,9 @@ Boyd.prototype = {
 	get headingChange () {
 		//todo: could make this a random number between 1 and the max...
 		return this._headingChange;
+	},
+	get velocity () {
+		return new THREE.Vector3(Math.cos(this._headingRad) * this._speed, Math.sin(this._headingRad) * this._speed, 0);
 	}
 
 };
@@ -192,7 +198,7 @@ Boyd.prototype.addVelocityOffset = function (vector) {
 };
 
 Boyd.prototype.update = function (delta) {
-	var vel  = this.velocity.sub(this.velocityOffset);
+	/*var vel  = this.velocity.sub(this.velocityOffset);
 
 
    	var headingTarget = THREE.Math.radToDeg(Math.atan2(vel.y, vel.x));
@@ -200,15 +206,26 @@ Boyd.prototype.update = function (delta) {
   	var avoidanceHeading = Boyd.normalize(headingDiff) * this.headingChange;
   	if (this.isPredator) {
     	avoidanceHeading *= -1;
-  	}
+  	}*/
   
-  	this.heading += avoidanceHeading;
+  	//this.heading += avoidanceHeading;
     
-	this.arrowHelper.setDirection(this.velocity.clone().normalize());
-	this.arrowHelper.setLength(this.velocity.length());
+	//this.vectorArrow.setDirection(this.velocity.clone().normalize());
+	//this.vectorArrow.setLength(this.velocity.length());
 
-	this._mesh.position.add(this.velocity.multiplyScalar(delta));
+	var vel = this.velocity.clone();
+
+	this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed)];
+	this.vectorLine.geometry.verticesNeedUpdate = true;
+	//console.log(verts);
+
+	//console.log(this.velocity);
+
+
 	this._mesh.rotation.z = this.headingRad;
+	this._mesh.position.add(new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed * delta));
+
+
 
 	this.velocityOffset = new THREE.Vector3(0,0,0);
 };

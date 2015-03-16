@@ -75,10 +75,6 @@ APP.simulation = (function simulation(util) {
 			speed: 0,
 			heading: 0
 		},
-		avg = {
-			speed: 0,
-			heading: 0
-		},
 		info = {
 
 		},
@@ -86,29 +82,9 @@ APP.simulation = (function simulation(util) {
 		boyd,
 		boydsLen = state.boyds.length;
 
-		for (i = 0; i < boydsLen; i++) {
-			boyd = state.boyds[i];
-			totals.speed += boyd.speed;
-			totals.heading += boyd.heading;
-		}
-
-		avg.speed = totals.speed / boydsLen;
-		avg.heading = totals.heading / boydsLen;
 
 		for (i = 0; i < boydsLen; i++) {
 			boyd = state.boyds[i];
-
-			//console.log("b", boyd.mesh.position);
-			//boyd.mesh.translateX(delta * trend(0.5, 0.1));
-			//boyd.mesh.translateY(delta * trend(0.5, 0.1));
-			//boyd.mesh.rotation.z += THREE.Math.degToRad(plusOrMinus() * 1);
-			//console.log("a", boyd.mesh.position);
-
-			//boyd.speed = trend(0.01, boyd.speed);
-			//boyd.heading = trend(0.01, boyd.heading);
-
-			//find neighbors within x distance
-
 			var neighborTotals = {
 				speed: 0,
 				heading: 0,
@@ -149,17 +125,12 @@ APP.simulation = (function simulation(util) {
 
 			if (neighborTotals.avoidanceCount === 0 && neighborTotals.count > 0) {
 				//console.log(boyd.acceleration);
-				boyd.speed += (neighborTotals.speed / neighborTotals.count > boyd.speed ? boyd.acceleration : -boyd.acceleration);
-				boyd.heading += (neighborTotals.heading / neighborTotals.count > boyd.heading ? boyd.headingChange : -boyd.headingChange);
+				//boyd.speed += (neighborTotals.speed / neighborTotals.count > boyd.speed ? boyd.acceleration : -boyd.acceleration);
+				//boyd.heading += (neighborTotals.heading / neighborTotals.count > boyd.heading ? boyd.headingChange : -boyd.headingChange);
 
 					//boyd.addVelocityOffset(neighborTotals.position.multiplyScalar(1 / neighborTotals.count));
 
 			}
-
-			//boyd.speed += (avg.speed > boyd.speed ? acceleration : -acceleration);
-			//boyd.heading += (avg.heading > boyd.heading ? headingChange : -headingChange);
-
-			//var didFlip = boyd.didFlip;
 
 			boyd.update(delta);
 			
