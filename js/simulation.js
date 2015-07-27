@@ -20,7 +20,7 @@ APP.simulation = (function simulation(util) {
 			rand = Math.random();
 			boyd = new Boyd({
 				size: 25,
-				speed: 100 * rand,
+				speed: 200 * rand,
 				influenceRange: 150 * rand,//150 * Math.random(),
 				avoidRangeSimilar: 30 * rand + 10,
 				avoidRangeDifferent: 200,
@@ -31,9 +31,9 @@ APP.simulation = (function simulation(util) {
 				acceleration: 7,
 				headingChange: 5,
 				drawDebugLines: false,
-				drawInfluenceRange: true,
-				drawAvoidRangeSimilar: true,
-				drawVelocityVector: true
+				drawInfluenceRange: false,
+				drawAvoidRangeSimilar: false,
+				drawVelocityVector: false
 			});
 
 			scene.add(boyd.mesh);
@@ -78,75 +78,40 @@ APP.simulation = (function simulation(util) {
 
 		delta /= 1000;
 
-		var totals = {
-				speed: 0,
-				heading: 0
-			},
-			info = {
-
-			},
-			i = 0,
+		var i = 0,
 			boyd,
 			boydsLen = state.boyds.length;
 
+		for (i = 0; i < boydsLen; i++) {
+			boyd = state.boyds[i];
+
+			for (var j = 0; j < boydsLen; j++) {
+				var otherBoyd = state.boyds[j];
+
+				if (otherBoyd !== boyd) {
+
+					var distVect = boyd.distVector(otherBoyd);
+					var distSq = distVect.lengthSq();
+
+
+
+                  	if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREY) {
+
+                  		if (distSq < boyd.avoidRangeSimilarSq) {
+							boyd.addPersonalSpaceIntruder(otherBoyd.position);
+                  		} else if (distSq < boyd.influenceRangeSq) {
+							boyd.addFriendlyVelocity(otherBoyd.velocity);
+                  		}
+                  		
+                  	}
+				}
+			}
+		}
 
 		for (i = 0; i < boydsLen; i++) {
 			boyd = state.boyds[i];
-			var neighborTotals = {
-				speed: 0,
-				heading: 0,
-				position: new THREE.Vector3(0, 0, 0),
-				count: 0,
-              	avoidanceCount: 0
-			};
-			for (var j = 0; j < boydsLen; j++) {
-				var otherBoyd = state.boyds[j];
-				if (otherBoyd !== boyd) {
 
-					var distVect = boyd.distVector(otherBoyd);//<-
-					var distSq = distVect.lengthSq();
-                  	var avoidanceRangeSq = boyd.type === otherBoyd.type ? boyd.avoidRangeSimilarSq : boyd.avoidRangeDifferentSq;
-
-
-                  	//if (boyd.isPrey) console.log(avoidanceRangeSq);
-                    //console.log(this.isPrey);
-
-
-					if (distSq < avoidanceRangeSq) {
-                        neighborTotals.avoidanceCount++;
-                      	var gradient = (avoidanceRangeSq / distSq) * 100;
-                      //console.log(gradient);
-						//boyd.addVelocityOffset(distVect.normalize().multiplyScalar(-gradient * 0.001));
-						boyd.addPersonalSpaceIntruder(otherBoyd.position);
-					} else if (distSq < boyd.influenceRangeSq) {
-						neighborTotals.count++;
-						if (boyd.type === otherBoyd.type) {
-							neighborTotals.speed += otherBoyd.speed;// / distSq;
-							neighborTotals.heading += otherBoyd.heading;// / distSq;
-							//neighborTotals.position.add(otherBoyd.position);
-
-							boyd.addFriendlyVelocity(otherBoyd.velocity);
-							//boyd.addVelocityOffset(otherBoyd.velocity);
-						} else {
-							neighborTotals.speed += otherBoyd.speed;// / distSq;
-							//todo: this is close, but not really right
-							//neighborTotals.heading += (-90) + otherBoyd.heading;// / distSq;
-
-						}
-					}
-
-					//console.log(boyd.type === otherBoyd.type);
-				}
-			}
-
-			if (neighborTotals.avoidanceCount === 0 && neighborTotals.count > 0) {
-				//console.log(boyd.acceleration);
-				//boyd.speed += (neighborTotals.speed / neighborTotals.count > boyd.speed ? boyd.acceleration : -boyd.acceleration);
-				//boyd.heading += (neighborTotals.heading / neighborTotals.count > boyd.heading ? boyd.headingChange : -boyd.headingChange);
-
-					//boyd.addVelocityOffset(neighborTotals.position.multiplyScalar(1 / neighborTotals.count));
-
-			}
+			boyd.update(delta);
 
 			//wrap around
 			if (boyd.position.x >= right) {
@@ -161,12 +126,6 @@ APP.simulation = (function simulation(util) {
 				boyd.position.y = top;
 			}
 		}
-
-		for (i = 0; i < boydsLen; i++) {
-			state.boyds[i].update(delta);
-		}
-
-		return info;
 	}
 
 
