@@ -12,21 +12,28 @@ APP.simulation = (function simulation(util) {
 	function init (config, scene) {
 		var boyd;
 
+		var rand;
 		for (var i = 0; i < config.preyCount; ++i) {
 
 			//new THREE.Color(Math.random(), Math.random(), Math.random()),
+
+			rand = Math.random();
 			boyd = new Boyd({
 				size: 25,
-				speed: 200 * Math.random(),
-				influenceRange: 75,//150 * Math.random(),
-				avoidRangeSimilar: 25,
+				speed: 100 * rand,
+				influenceRange: 150 * rand,//150 * Math.random(),
+				avoidRangeSimilar: 30 * rand + 10,
 				avoidRangeDifferent: 200,
-				heading: -180 * Math.random(),
+				heading: 360 * rand,
 				color: new THREE.Color(0x00ff00),
 				velocity: new THREE.Vector2(1, 0),
 				type: "PREY",
 				acceleration: 7,
-				headingChange: 5
+				headingChange: 5,
+				drawDebugLines: false,
+				drawInfluenceRange: true,
+				drawAvoidRangeSimilar: true,
+				drawVelocityVector: true
 			});
 
 			scene.add(boyd.mesh);
@@ -72,15 +79,15 @@ APP.simulation = (function simulation(util) {
 		delta /= 1000;
 
 		var totals = {
-			speed: 0,
-			heading: 0
-		},
-		info = {
+				speed: 0,
+				heading: 0
+			},
+			info = {
 
-		},
-		i = 0,
-		boyd,
-		boydsLen = state.boyds.length;
+			},
+			i = 0,
+			boyd,
+			boydsLen = state.boyds.length;
 
 
 		for (i = 0; i < boydsLen; i++) {
@@ -95,22 +102,31 @@ APP.simulation = (function simulation(util) {
 			for (var j = 0; j < boydsLen; j++) {
 				var otherBoyd = state.boyds[j];
 				if (otherBoyd !== boyd) {
+
 					var distVect = boyd.distVector(otherBoyd);//<-
 					var distSq = distVect.lengthSq();
                   	var avoidanceRangeSq = boyd.type === otherBoyd.type ? boyd.avoidRangeSimilarSq : boyd.avoidRangeDifferentSq;
+
+
                   	//if (boyd.isPrey) console.log(avoidanceRangeSq);
                     //console.log(this.isPrey);
+
+
 					if (distSq < avoidanceRangeSq) {
                         neighborTotals.avoidanceCount++;
                       	var gradient = (avoidanceRangeSq / distSq) * 100;
                       //console.log(gradient);
-						boyd.addVelocityOffset(distVect.normalize().multiplyScalar(gradient));
+						//boyd.addVelocityOffset(distVect.normalize().multiplyScalar(-gradient * 0.001));
+						boyd.addPersonalSpaceIntruder(otherBoyd.position);
 					} else if (distSq < boyd.influenceRangeSq) {
 						neighborTotals.count++;
 						if (boyd.type === otherBoyd.type) {
 							neighborTotals.speed += otherBoyd.speed;// / distSq;
 							neighborTotals.heading += otherBoyd.heading;// / distSq;
 							//neighborTotals.position.add(otherBoyd.position);
+
+							boyd.addFriendlyVelocity(otherBoyd.velocity);
+							//boyd.addVelocityOffset(otherBoyd.velocity);
 						} else {
 							neighborTotals.speed += otherBoyd.speed;// / distSq;
 							//todo: this is close, but not really right
@@ -132,10 +148,6 @@ APP.simulation = (function simulation(util) {
 
 			}
 
-			boyd.update(delta);
-			
-
-
 			//wrap around
 			if (boyd.position.x >= right) {
 				boyd.position.x = left;
@@ -148,6 +160,10 @@ APP.simulation = (function simulation(util) {
 			} else if (boyd.position.y < bottom) {
 				boyd.position.y = top;
 			}
+		}
+
+		for (i = 0; i < boydsLen; i++) {
+			state.boyds[i].update(delta);
 		}
 
 		return info;

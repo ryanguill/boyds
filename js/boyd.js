@@ -14,16 +14,23 @@ function Boyd (args) {
 		DEFAULT_ACCELERATION = 7,
 		DEFAULT_HEADING_CHANGE = 5;
 
-
 	this.size = args.size || DEFAULT_SIZE;
 	this.color = args.color || DEFAULT_COLOR;
-	this.speed = args.speed || DEFAULT_SPEED;
-	this.heading = args.heading || DEFAULT_HEADING; //degrees
+	var speed = args.speed || DEFAULT_SPEED;
+	var heading = args.heading || DEFAULT_HEADING; //degrees
+
+	this.velocity = (new THREE.Vector3(Math.cos(heading * Math.PI / 180), Math.sin(heading * Math.PI / 180), 0)).multiplyScalar(speed);
+
 	this.influenceRange = args.influenceRange || DEFAULT_INFLUENCE_RANGE;
 	this.acceleration = args.acceleration || DEFAULT_ACCELERATION;
 	this.headingChange = args.headingChange || DEFAULT_HEADING_CHANGE;
 
 	this.velocityOffset = new THREE.Vector3(0,0,0);
+	this.friendlyVelocity = new THREE.Vector3(0,0,0);
+	this.personalSpaceIntruderPosition = new THREE.Vector3(0,0,0);
+	this.numNeighborsThisFrame = 0;
+	this.numPersonalSpaceIntruders = 0;
+	this.targetVelocity = 100;
 
 	this.type = args.type || "PREY";
 
@@ -42,37 +49,49 @@ function Boyd (args) {
 	var material = new THREE.MeshBasicMaterial({ color: this.color.getHex() });
 	this.mesh = new THREE.Mesh(geometry, material);
 
-	var influenceRangeRingGeometry = new THREE.RingGeometry(this.influenceRange, this.influenceRange + 1, 32);
-	var influenceRangeRingMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide});
-	this.influenceRangeRingMesh = new THREE.Mesh(influenceRangeRingGeometry, influenceRangeRingMaterial);
+	if (args.drawDebugLines || args.drawInfluenceRange) {
+		var influenceRangeRingGeometry = new THREE.RingGeometry(this.influenceRange, this.influenceRange + 1, 32);
+		var influenceRangeRingMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff, side: THREE.DoubleSide});
+		this.influenceRangeRingMesh = new THREE.Mesh(influenceRangeRingGeometry, influenceRangeRingMaterial);
 
-	this._mesh.add(this.influenceRangeRingMesh);
+		this._mesh.add(this.influenceRangeRingMesh);
+	}
+	if (args.drawDebugLines || args.drawAvoidRangeSimilar) {
 
-	var avoidRangeSimilarRingGeometry = new THREE.RingGeometry(this.avoidRangeSimilar, this.avoidRangeSimilar + 1, 32);
-	var avoidRangeSimilarRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
-	this.avoidRangeSimilarRingMesh = new THREE.Mesh(avoidRangeSimilarRingGeometry, avoidRangeSimilarRingMaterial);
+		var avoidRangeSimilarRingGeometry = new THREE.RingGeometry(this.avoidRangeSimilar, this.avoidRangeSimilar + 1, 32);
+		var avoidRangeSimilarRingMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00, side: THREE.DoubleSide});
+		this.avoidRangeSimilarRingMesh = new THREE.Mesh(avoidRangeSimilarRingGeometry, avoidRangeSimilarRingMaterial);
 
-	//this.mesh.add(this.avoidRangeSimilarRingMesh);
-  
-  	var avoidRangeDifferentRingGeometry = new THREE.RingGeometry(this.avoidRangeDifferent, this.avoidRangeDifferent + 1, 32);
-	var avoidRangeDifferentRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
-	this.avoidRangeDifferentRingMesh = new THREE.Mesh(avoidRangeDifferentRingGeometry, avoidRangeDifferentRingMaterial);
+		this.mesh.add(this.avoidRangeSimilarRingMesh);
+	}
+	if (args.drawDebugLines || args.drawAvoidRangeDifferent) {
+	  
+	  	var avoidRangeDifferentRingGeometry = new THREE.RingGeometry(this.avoidRangeDifferent, this.avoidRangeDifferent + 1, 32);
+		var avoidRangeDifferentRingMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: THREE.DoubleSide});
+		this.avoidRangeDifferentRingMesh = new THREE.Mesh(avoidRangeDifferentRingGeometry, avoidRangeDifferentRingMaterial);
 
-	this._mesh.add(this.avoidRangeDifferentRingMesh);
+		this._mesh.add(this.avoidRangeDifferentRingMesh);
+	}
+	if (args.drawDebugLines || args.drawVelocityVector) {
 
-	//this.vectorArrow = new THREE.ArrowHelper( this.velocityOffset.clone().normalize(), new THREE.Vector3(0,0,0), this.velocityOffset.length(), 0xff0000 );
-	//this._mesh.add(this.vectorArrow);
+		var vectorLineGeometry = new THREE.Geometry();
+		vectorLineGeometry.dynamic = true;
+		var vectorLineMaterial = new THREE.LineBasicMaterial({color: 0xFF0000});
+		this.vectorLine = new THREE.Line(vectorLineGeometry, vectorLineMaterial);
 
-	var vectorLineGeometry = new THREE.Geometry();
-	vectorLineGeometry.dynamic = true;
-	var vectorLineMaterial = new THREE.LineBasicMaterial({color: 0xFF0000});
-	this.vectorLine = new THREE.Line(vectorLineGeometry, vectorLineMaterial);
-	this._mesh.add(this.vectorLine);
+		this._mesh.add(this.vectorLine);
+	}
 
 }
 
 
 Boyd.prototype = {
+	get velocity () {
+		return this._velocity;
+	},
+	set velocity (v) {
+		return this._velocity = v;
+	},
 	set size (value) {
 		this._size = value;
 	},
@@ -99,27 +118,13 @@ Boyd.prototype = {
 		this._headingRad = THREE.Math.degToRad(this._heading);
 	},
 	get heading () {
-		return this._heading;
+		return  this.headingRad * 180 / Math.PI;
 	},
 	get headingRad () {
-		return this._headingRad;
-	},
-	set speed (value) {
-
-		/*if (Boyd.normalize(value) !== Boyd.normalize(this._speed)) {
-			if (value < 0) {
-				this._color = new THREE.Color(1, 0, 0);
-			} else {
-				this._color = new THREE.Color(0, 1, 0);
-			}
-
-			if (this._mesh !== undefined) this._mesh.material = new THREE.MeshBasicMaterial({ color: this._color.getHex() });
-		}*/
-		//this._speed = value;
-		this._speed = Math.min(Math.max(value, 50), 200);
+		return Math.atan2(this.velocity.y, this.velocity.x);
 	},
 	get speed () {
-		return this._speed;
+		return this._velocity.length();
 	},
 	set influenceRange (value) {
 		this._influenceRange = Math.max(value, this._size);
@@ -183,8 +188,11 @@ Boyd.prototype = {
 		//todo: could make this a random number between 1 and the max...
 		return this._headingChange;
 	},
-	get velocity () {
-		return new THREE.Vector3(Math.cos(this._headingRad) * this._speed, Math.sin(this._headingRad) * this._speed, 0);
+	get headingChangeFollowFactor () {
+		return 2;
+	},
+	get headingChangeAvoidFactor () {
+		return 2;
 	}
 
 };
@@ -198,25 +206,62 @@ Boyd.prototype.addVelocityOffset = function (vector) {
 	this.velocityOffset.add(vector);
 };
 
-Boyd.prototype.update = function (delta) {
-	var vel  = this.velocity.sub(this.velocityOffset);
+Boyd.prototype.addFriendlyVelocity = function (velocity) {
+	this.friendlyVelocity.add(velocity);
+	this.numNeighborsThisFrame++;
+};
 
-   	var headingTarget = THREE.Math.radToDeg(Math.atan2(vel.y, vel.x));
-  	var headingDiff = headingTarget - this.heading;
-  	var avoidanceHeading = Boyd.normalize(headingDiff) * this.headingChange;
-  	if (this.isPredator) {
-    	avoidanceHeading *= -1;
-  	}
+Boyd.prototype.addPersonalSpaceIntruder = function (position) {
+	this.personalSpaceIntruderPosition.add(position);
+	this.numPersonalSpaceIntruders++;
+};
+
+Boyd.prototype.update = function (delta) {
+	var currentVelocity = this.velocity.clone();
+
+	if (this.numPersonalSpaceIntruders !== 0) {
+
+		var averagePersonalSpaceIntruderPosition = this.personalSpaceIntruderPosition.multiplyScalar(1.0 / this.numPersonalSpaceIntruders);
+
+		var positionDiff = this.mesh.position.clone().sub(averagePersonalSpaceIntruderPosition);
+
+		this.velocity.add(positionDiff.normalize().multiplyScalar(this.headingChangeAvoidFactor));
+
+	} else if (this.numNeighborsThisFrame !== 0) {
+
+		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
+
+		var velocityDiff = averageFriendlyVelocity.sub(currentVelocity);
+
+		this.velocity.add(velocityDiff.normalize().multiplyScalar(this.headingChangeFollowFactor));
+
+		if (this.velocity.lengthSq() < this.targetVelocity * this.targetVelocity) {
+			this.velocity.multiplyScalar(1.05);
+		}
+	}
+
+	
+
+   // 	var headingTarget = THREE.Math.radToDeg(Math.atan2(vel.y, vel.x));
+  	// var headingDiff = headingTarget - this.heading;
+  	// var avoidanceHeading = Boyd.normalize(headingDiff) * this.headingChange;
+  	// if (this.isPredator) {
+   //  	avoidanceHeading *= -1;
+  	// }
   
-  	this.heading += avoidanceHeading;
+  	// this.heading += avoidanceHeading;
 
 	this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed)];
 	this.vectorLine.geometry.verticesNeedUpdate = true;
 
-	this._mesh.position.add(vel.multiplyScalar(delta));
-	this._mesh.rotation.z = this.headingRad;
+	this.mesh.position.add(this.velocity.clone().multiplyScalar(delta));
+	this.mesh.rotation.z = Math.atan2(this.velocity.y, this.velocity.x);
 
 	this.velocityOffset = new THREE.Vector3(0,0,0);
+	this.friendlyVelocity = new THREE.Vector3(0,0,0);
+	this.personalSpaceIntruderPosition = new THREE.Vector3(0,0,0);
+	this.numNeighborsThisFrame = 0;
+	this.numPersonalSpaceIntruders = 0;
 };
 
 Boyd.prototype.dist = function (otherBoyd) {
