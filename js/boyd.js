@@ -14,6 +14,11 @@ function Boyd (args) {
 		DEFAULT_ACCELERATION = 7,
 		DEFAULT_HEADING_CHANGE = 5;
 
+
+	if (args.dataPrint) {
+		this.dataPrint = args.dataPrint;
+	}
+
 	this.size = args.size || DEFAULT_SIZE;
 	this.color = args.color || DEFAULT_COLOR;
 	var speed = args.speed || DEFAULT_SPEED;
@@ -99,7 +104,7 @@ Boyd.prototype = {
 		return this._velocity;
 	},
 	set velocity (v) {
-		return this._velocity = v;
+		this._velocity = v;
 	},
 	set size (value) {
 		this._size = value;
@@ -238,19 +243,25 @@ Boyd.prototype.update = function (delta) {
 
 	} else if (this.numNeighborsThisFrame !== 0) {
 
-		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
+		if (this.dataPrint) {
+			this.dataPrint(this);
+		}
 
-		var velocityDiff = averageFriendlyVelocity.sub(currentVelocity);
+		var myVelocityAtTheirDir = this.friendlyVelocity.normalize().multiplyScalar(currentVelocity.length());
 
+		var velocityDiff = myVelocityAtTheirDir.sub(currentVelocity);
+		
 		this.velocity.add(velocityDiff.normalize().multiplyScalar(this.headingChangeFollowFactor));
 
-		//the below scale values are slightly different so that (hopefully) an infinite
-		//oscillation doesn't occur around the targetVelocity.
-		if (this.velocity.lengthSq() < this.targetVelocity * this.targetVelocity) {
-			this.velocity.multiplyScalar(1.05);
-		} else if (this.velocity.lengthSq() > this.targetVelocity * this.targetVelocity) {
-			this.velocity.multiplyScalar(0.955);
-		}
+	}
+
+	//the below scale values are slightly different so that (hopefully) an infinite
+	//oscillation doesn't occur around the targetVelocity.
+
+	if (this.velocity.lengthSq() < this.targetVelocity * this.targetVelocity) {
+		this.velocity.multiplyScalar(1.001);
+	} else if (this.velocity.lengthSq() > this.targetVelocity * this.targetVelocity) {
+		this.velocity.multiplyScalar(0.999);
 	}
 
   	if (this.drawVelocityVector) {

@@ -22,7 +22,7 @@ APP.simulation = (function simulation(util) {
 				size: 25,
 				speed: 200 * rand,
 				influenceRange: 150 * rand,//150 * Math.random(),
-				avoidRangeSimilar: 30 * rand + 10,
+				avoidRangeSimilar: 20 * rand + 10,
 				avoidRangeDifferent: 200,
 				heading: 360 * rand,
 				color: new THREE.Color(0x00ff00),
@@ -30,7 +30,6 @@ APP.simulation = (function simulation(util) {
 				type: "PREY",
 				acceleration: 7,
 				headingChange: 5,
-				drawDebugLines: false,
 				drawInfluenceRange: false,
 				drawAvoidRangeSimilar: false,
 				drawVelocityVector: false
@@ -72,6 +71,83 @@ APP.simulation = (function simulation(util) {
 
 			state.boyds.push(boyd);
 		}
+
+		/*
+			Test cases below for trying specific behavior.
+		*/
+
+		// boyd = new Boyd({
+		// 	size: 25,
+		// 	speed: 400,
+		// 	heading: 0, //degrees
+		// 	influenceRange: 300,
+		// 	avoidRangeSimilar: 30,
+		// 	avoidRangeDifferent: 200,
+		// 	color: new THREE.Color(0x00ff00),
+		// 	velocity: new THREE.Vector2(1, 0),
+		// 	type: "PREY",
+		// 	acceleration: 7,
+		// 	headingChange: 5,
+		// 	drawInfluenceRange: true,
+		// 	drawAvoidRangeSimilar: true,
+		// 	drawVelocityVector: true
+		// });
+		// scene.add(boyd.mesh);
+		// boyd.mesh.translateX(-200);
+		// boyd.mesh.translateY(0);
+		// state.boyds.push(boyd);
+
+		// boyd = new Boyd({
+		// 	size: 25,
+		// 	speed: 400,
+		// 	heading: 180, //degrees
+		// 	influenceRange: 300,
+		// 	avoidRangeSimilar: 30,
+		// 	avoidRangeDifferent: 200,
+		// 	color: new THREE.Color(0x00ff00),
+		// 	velocity: new THREE.Vector2(1, 0),
+		// 	type: "PREY",
+		// 	acceleration: 7,
+		// 	headingChange: 5,
+		// 	drawInfluenceRange: true,
+		// 	drawAvoidRangeSimilar: true,
+		// 	drawVelocityVector: true,
+		// 	dataPrint: function (theboyd) {
+
+		// 		// debugger;
+		// 		// console.log(theboyd.velocity);
+		// 		// console.log(theboyd.friendlyVelocity);
+		// 		// console.log(theboyd.friendlyVelocity.length());
+
+		// 	}
+		// });
+		// scene.add(boyd.mesh);
+		// boyd.mesh.translateX(200);
+		// boyd.mesh.translateY(100);
+		// state.boyds.push(boyd);
+
+		// boyd = new Boyd({
+		// 	size: 25,
+		// 	speed: 400,
+		// 	heading: 180, //degrees
+		// 	influenceRange: 300,
+		// 	avoidRangeSimilar: 30,
+		// 	avoidRangeDifferent: 200,
+		// 	color: new THREE.Color(0x00ff00),
+		// 	velocity: new THREE.Vector2(1, 0),
+		// 	type: "PREY",
+		// 	acceleration: 7,
+		// 	headingChange: 5,
+		// 	drawInfluenceRange: true,
+		// 	drawAvoidRangeSimilar: true,
+		// 	drawVelocityVector: true
+		// });
+		// scene.add(boyd.mesh);
+		// boyd.mesh.translateX(200);
+		// boyd.mesh.translateY(-100);
+		// state.boyds.push(boyd);
+
+		
 	}
 
 	function update (delta, top, right, bottom, left) {
@@ -92,8 +168,6 @@ APP.simulation = (function simulation(util) {
 
 					var distVect = boyd.distVector(otherBoyd);
 					var distSq = distVect.lengthSq();
-
-
 
                   	if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREY) {
 
