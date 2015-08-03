@@ -237,32 +237,27 @@ Boyd.prototype.update = function (delta) {
 
 	} else if (this.numNeighborsThisFrame !== 0) {
 
-		// var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
+		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
 
 		// var velocityDiff = averageFriendlyVelocity.sub(currentVelocity);
 		
 		// this.velocity.add(velocityDiff.normalize().multiplyScalar(this.headingChange));
 
-		var crossZComponent = (new THREE.Vector3()).crossVectors(currentVelocity, this.friendlyVelocity).z;
+		var crossZComponent = (new THREE.Vector3()).crossVectors(currentVelocity.clone().normalize(), averageFriendlyVelocity.clone().normalize()).z;
 
-		// if (crossZComponent > 1e-15 || crossZComponent < -1e-15) {
+		var rotationAxis = new THREE.Vector3(0, 0, 1);
+		var rotationRadians = 90 * Math.PI / 180;
 
-		// } else {
-
-			var rotationAxis = new THREE.Vector3(0, 0, 1);
-			var rotationRadians = 90 * Math.PI / 180;
-
-			if (crossZComponent < 0) {
-				//turn right?
-				this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, -1), rotationRadians).normalize().multiplyScalar(this.headingChange));
-			} else if (crossZComponent > 0) {
-				//turn left?
-				this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), rotationRadians).normalize().multiplyScalar(this.headingChange));
-			} else {
-				//we are either going the correct direction, or the opposite direction
-				//still need to figure this out
-			}
-		//}
+		if (crossZComponent < 0) {
+			//turn right
+			this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, -1), rotationRadians).normalize().multiplyScalar(this.headingChange));
+		} else if (crossZComponent > 0) {
+			//turn left
+			this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), rotationRadians).normalize().multiplyScalar(this.headingChange));
+		} else {
+			//we are either going the correct direction, or the opposite direction
+			//still need to figure this out
+		}
 
 	}
 
