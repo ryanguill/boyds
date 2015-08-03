@@ -13,23 +13,30 @@ APP.simulation = (function simulation(util) {
 		var boyd;
 
 		var rand;
+		var avoidRangeSimilarVariance = 30,
+			minAvoidRangeSimilar = 15,
+			influenceRangeVariance = 50,
+			minInfluenceRange = 50,
+			headingChangeVariance = 0,
+			minHeadingChange = 2;
+
 		for (var i = 0; i < config.preyCount; ++i) {
 
 			//new THREE.Color(Math.random(), Math.random(), Math.random()),
 
-			rand = Math.random();
+			rand =  Math.random();
 			boyd = new Boyd({
 				size: 25,
 				speed: 200 * rand,
-				influenceRange: 150 * rand,//150 * Math.random(),
-				avoidRangeSimilar: 20 * rand + 10,
+				influenceRange: influenceRangeVariance * rand + minInfluenceRange,
+				avoidRangeSimilar: avoidRangeSimilarVariance * rand + minAvoidRangeSimilar,
 				avoidRangeDifferent: 200,
-				heading: 360 * rand,
+				heading: 360 * Math.random(),
 				color: new THREE.Color(0x00ff00),
 				velocity: new THREE.Vector2(1, 0),
 				type: "PREY",
 				acceleration: 7,
-				headingChange: 5,
+				headingChange: headingChangeVariance * rand + minHeadingChange,
 				drawInfluenceRange: false,
 				drawAvoidRangeSimilar: false,
 				drawVelocityVector: false
@@ -111,15 +118,7 @@ APP.simulation = (function simulation(util) {
 		// 	headingChange: 5,
 		// 	drawInfluenceRange: true,
 		// 	drawAvoidRangeSimilar: true,
-		// 	drawVelocityVector: true,
-		// 	dataPrint: function (theboyd) {
-
-		// 		// debugger;
-		// 		// console.log(theboyd.velocity);
-		// 		// console.log(theboyd.friendlyVelocity);
-		// 		// console.log(theboyd.friendlyVelocity.length());
-
-		// 	}
+		// 	drawVelocityVector: true
 		// });
 		// scene.add(boyd.mesh);
 		// boyd.mesh.translateX(200);
@@ -140,7 +139,15 @@ APP.simulation = (function simulation(util) {
 		// 	headingChange: 5,
 		// 	drawInfluenceRange: true,
 		// 	drawAvoidRangeSimilar: true,
-		// 	drawVelocityVector: true
+		// 	drawVelocityVector: true,
+		// 	dataPrint: function (theboyd) {
+
+		// 		// debugger;
+		// 		console.log('myVelocity: ', theboyd.velocity);
+		// 		console.log('friendlyVe: ', theboyd.friendlyVelocity);
+		// 		console.log('^len: ', theboyd.friendlyVelocity.length());
+
+		// 	}
 		// });
 		// scene.add(boyd.mesh);
 		// boyd.mesh.translateX(200);

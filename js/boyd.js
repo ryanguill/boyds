@@ -12,7 +12,7 @@ function Boyd (args) {
 		DEFAULT_AVOID_RANGE_SIMILAR = 25,
 		DEFAULT_AVOID_RANGE_DIFFERENT = 0,
 		DEFAULT_ACCELERATION = 7,
-		DEFAULT_HEADING_CHANGE = 5;
+		DEFAULT_HEADING_CHANGE = 2;
 
 
 	if (args.dataPrint) {
@@ -199,14 +199,7 @@ Boyd.prototype = {
 		this._headingChange = Math.max(value, 0);
 	},
 	get headingChange () {
-		//todo: could make this a random number between 1 and the max...
 		return this._headingChange;
-	},
-	get headingChangeFollowFactor () {
-		return 2;
-	},
-	get headingChangeAvoidFactor () {
-		return 2;
 	}
 
 };
@@ -239,19 +232,37 @@ Boyd.prototype.update = function (delta) {
 
 		var positionDiff = this.mesh.position.clone().sub(averagePersonalSpaceIntruderPosition);
 
-		this.velocity.add(positionDiff.normalize().multiplyScalar(this.headingChangeAvoidFactor));
+		this.velocity.add(positionDiff.normalize().multiplyScalar(this.headingChange));
+
 
 	} else if (this.numNeighborsThisFrame !== 0) {
 
-		if (this.dataPrint) {
-			this.dataPrint(this);
-		}
+		// var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
 
-		var myVelocityAtTheirDir = this.friendlyVelocity.normalize().multiplyScalar(currentVelocity.length());
-
-		var velocityDiff = myVelocityAtTheirDir.sub(currentVelocity);
+		// var velocityDiff = averageFriendlyVelocity.sub(currentVelocity);
 		
-		this.velocity.add(velocityDiff.normalize().multiplyScalar(this.headingChangeFollowFactor));
+		// this.velocity.add(velocityDiff.normalize().multiplyScalar(this.headingChange));
+
+		var crossZComponent = (new THREE.Vector3()).crossVectors(currentVelocity, this.friendlyVelocity).z;
+
+		// if (crossZComponent > 1e-15 || crossZComponent < -1e-15) {
+
+		// } else {
+
+			var rotationAxis = new THREE.Vector3(0, 0, 1);
+			var rotationRadians = 90 * Math.PI / 180;
+
+			if (crossZComponent < 0) {
+				//turn right?
+				this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, -1), rotationRadians).normalize().multiplyScalar(this.headingChange));
+			} else if (crossZComponent > 0) {
+				//turn left?
+				this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), rotationRadians).normalize().multiplyScalar(this.headingChange));
+			} else {
+				//we are either going the correct direction, or the opposite direction
+				//still need to figure this out
+			}
+		//}
 
 	}
 
