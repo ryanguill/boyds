@@ -225,6 +225,7 @@ Boyd.prototype.addPersonalSpaceIntruder = function (position) {
 
 Boyd.prototype.update = function (delta) {
 	var currentVelocity = this.velocity.clone();
+	var velocityDirection = currentVelocity.clone().normalize();
 
 	if (this.numPersonalSpaceIntruders !== 0) {
 
@@ -232,28 +233,28 @@ Boyd.prototype.update = function (delta) {
 
 		var positionDiff = this.mesh.position.clone().sub(averagePersonalSpaceIntruderPosition);
 
-		this.velocity.add(positionDiff.normalize().multiplyScalar(this.headingChange));
-
+		this.velocity.add(positionDiff.setLength(this.headingChange));
 
 	} else if (this.numNeighborsThisFrame !== 0) {
 
 		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
+		var averageFriendlyVelocityDirection = averageFriendlyVelocity.clone().normalize();
 
-		// var velocityDiff = averageFriendlyVelocity.sub(currentVelocity);
-		
-		// this.velocity.add(velocityDiff.normalize().multiplyScalar(this.headingChange));
-
-		var crossZComponent = (new THREE.Vector3()).crossVectors(currentVelocity.clone().normalize(), averageFriendlyVelocity.clone().normalize()).z;
+		var crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, averageFriendlyVelocityDirection).z;
 
 		var rotationAxis = new THREE.Vector3(0, 0, 1);
-		var rotationRadians = 90 * Math.PI / 180;
+		var leftRotationRadians = 90 * Math.PI / 180;
+
+		var perpendicularVelocity = currentVelocity.applyAxisAngle(rotationAxis, leftRotationRadians); //points left
+		var velocityToAdd = perpendicularVelocity.setLength(this.headingChange);
 
 		if (crossZComponent < 0) {
 			//turn right
-			this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, -1), rotationRadians).normalize().multiplyScalar(this.headingChange));
+			velocityToAdd.negate(); //so that it points right
+			this.velocity.add(velocityToAdd);
 		} else if (crossZComponent > 0) {
 			//turn left
-			this.velocity.add(currentVelocity.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), rotationRadians).normalize().multiplyScalar(this.headingChange));
+			this.velocity.add(velocityToAdd);
 		} else {
 			//we are either going the correct direction, or the opposite direction
 			//still need to figure this out
@@ -265,7 +266,7 @@ Boyd.prototype.update = function (delta) {
 	//oscillation doesn't occur around the targetVelocity.
 
 	if (this.velocity.lengthSq() < this.targetVelocity * this.targetVelocity) {
-		this.velocity.multiplyScalar(1.001);
+		this.velocity.multiplyScalar(1.0011);
 	} else if (this.velocity.lengthSq() > this.targetVelocity * this.targetVelocity) {
 		this.velocity.multiplyScalar(0.999);
 	}
