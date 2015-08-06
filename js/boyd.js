@@ -95,7 +95,10 @@ function Boyd (args) {
 		this._mesh.add(this.vectorLine);
 		this.drawVelocityVector = true;
 	}
-
+	
+	this._positiveZVector = new THREE.Vector3(0, 0, 1);
+	this._leftRotationRadians = 90 * Math.PI / 180;
+	
 }
 
 
@@ -201,7 +204,6 @@ Boyd.prototype = {
 	get headingChange () {
 		return this._headingChange;
 	}
-
 };
 
 Boyd.normalize = function (value) {
@@ -223,38 +225,69 @@ Boyd.prototype.addPersonalSpaceIntruder = function (position) {
 	this.numPersonalSpaceIntruders++;
 };
 
+Boyd.prototype.getLeftTurnUnitVector = function () {
+	return this.velocity.clone().applyAxisAngle(this._positiveZVector, this._leftRotationRadians).normalize();
+};
+
+Boyd.prototype.turnLeft = function () {
+	this.velocity.add(this.getLeftTurnUnitVector().multiplyScalar(this.headingChange));
+};
+
+Boyd.prototype.turnRight = function () {
+	this.velocity.add(this.getLeftTurnUnitVector().negate().multiplyScalar(this.headingChange));
+};
+
 Boyd.prototype.update = function (delta) {
 	var currentVelocity = this.velocity.clone();
 	var velocityDirection = currentVelocity.clone().normalize();
+	var crossZComponent;
 
 	if (this.numPersonalSpaceIntruders !== 0) {
 
 		var averagePersonalSpaceIntruderPosition = this.personalSpaceIntruderPosition.multiplyScalar(1.0 / this.numPersonalSpaceIntruders);
 
-		var positionDiff = this.mesh.position.clone().sub(averagePersonalSpaceIntruderPosition);
-
-		this.velocity.add(positionDiff.setLength(this.headingChange));
-
-	} else if (this.numNeighborsThisFrame !== 0) {
-
-		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
-		var averageFriendlyVelocityDirection = averageFriendlyVelocity.clone().normalize();
-
-		var crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, averageFriendlyVelocityDirection).z;
-
-		var rotationAxis = new THREE.Vector3(0, 0, 1);
-		var leftRotationRadians = 90 * Math.PI / 180;
-
-		var perpendicularVelocity = currentVelocity.applyAxisAngle(rotationAxis, leftRotationRadians); //points left
-		var velocityToAdd = perpendicularVelocity.setLength(this.headingChange);
+		var targetVector = this.mesh.position.clone().sub(averagePersonalSpaceIntruderPosition);
+		var targetVectorDirection = targetVector.normalize();
+		
+		crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, targetVectorDirection).z;
 
 		if (crossZComponent < 0) {
 			//turn right
-			velocityToAdd.negate(); //so that it points right
-			this.velocity.add(velocityToAdd);
+			this.turnRight();
+			//this.turnRight();
 		} else if (crossZComponent > 0) {
 			//turn left
-			this.velocity.add(velocityToAdd);
+			this.turnLeft();
+			//this.turnLeft();
+		} else {
+			//we are either going the correct direction, or the opposite direction
+			//still need to figure this out
+		}
+	}
+	
+	if (this.numNeighborsThisFrame !== 0) {
+		// TODO: IWB @paul @ryan - Consider the following:
+		// Not sure if the above should be an 'else if' or not:
+		
+		// I feel like having an 'else if' is contributing to the situations where we have a boyd
+		// going against the grain and won't turn around because they keep hitting
+		// other boyds' personal spaces.
+		
+		// But on the other hand, having just another 'if' makes them clump up much quicker
+		// and they seem to stay that way much longer unless we double (or similar) the turns
+		// that each boyd does for personal space intruders.
+
+		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
+		var averageFriendlyVelocityDirection = averageFriendlyVelocity.normalize();
+
+		crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, averageFriendlyVelocityDirection).z;
+
+		if (crossZComponent < 0) {
+			//turn right
+			this.turnRight();
+		} else if (crossZComponent > 0) {
+			//turn left
+			this.turnLeft();
 		} else {
 			//we are either going the correct direction, or the opposite direction
 			//still need to figure this out
@@ -266,9 +299,9 @@ Boyd.prototype.update = function (delta) {
 	//oscillation doesn't occur around the targetVelocity.
 
 	if (this.velocity.lengthSq() < this.targetVelocity * this.targetVelocity) {
-		this.velocity.multiplyScalar(1.0011);
+		this.velocity.multiplyScalar(1.01);
 	} else if (this.velocity.lengthSq() > this.targetVelocity * this.targetVelocity) {
-		this.velocity.multiplyScalar(0.999);
+		this.velocity.multiplyScalar(0.9);
 	}
 
   	if (this.drawVelocityVector) {
