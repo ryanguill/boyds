@@ -17,8 +17,10 @@ APP.simulation = (function simulation(util) {
 			minAvoidRangeSimilar = 15,
 			influenceRangeVariance = 50,
 			minInfluenceRange = 50,
-			headingChangeVariance = 0,
-			minHeadingChange = 2;
+			flockHeadingChangeVariance = 0,
+			minFlockHeadingChange = 2,
+			personalSpaceHeadingChangeVariance = 0,
+			minPersonalSpaceHeadingChange = 4;
 
 		for (var i = 0; i < config.preyCount; ++i) {
 
@@ -27,7 +29,9 @@ APP.simulation = (function simulation(util) {
 			rand =  Math.random();
 			boyd = new Boyd({
 				size: 25,
-				speed: 200 * rand,
+				speed: 100 * rand + 50,
+				targetSpeed: 100,
+				acceleration: 1,
 				influenceRange: influenceRangeVariance * rand + minInfluenceRange,
 				avoidRangeSimilar: avoidRangeSimilarVariance * rand + minAvoidRangeSimilar,
 				avoidRangeDifferent: 200,
@@ -35,8 +39,8 @@ APP.simulation = (function simulation(util) {
 				color: new THREE.Color(0x00ff00),
 				velocity: new THREE.Vector2(1, 0),
 				type: "PREY",
-				acceleration: 7,
-				headingChange: headingChangeVariance * rand + minHeadingChange,
+				flockHeadingChange: flockHeadingChangeVariance * rand + minFlockHeadingChange,
+				personalSpaceHeadingChange: personalSpaceHeadingChangeVariance * rand + minPersonalSpaceHeadingChange,
 				drawInfluenceRange: false,
 				drawAvoidRangeSimilar: false,
 				drawVelocityVector: false
