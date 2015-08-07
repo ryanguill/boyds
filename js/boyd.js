@@ -112,6 +112,9 @@ Boyd.prototype = {
 	set velocity (v) {
 		this._velocity = v;
 	},
+	get targetSpeedSq () {
+		return this._targetSpeed * this._targetSpeed;
+	},
 	get targetSpeed () {
 		return this._targetSpeed;
 	},
@@ -204,8 +207,11 @@ Boyd.prototype = {
 		this._acceleration = Math.max(value, 0);
 	},
 	get acceleration () {
-		//todo: could make this a random number between 1 and the max...
 		return this._acceleration;
+	},
+	get modifiedAcceleration () {
+		// any number between 'accel/2' and 'accel + accel/2'
+		return (Math.random() * this._acceleration) + (this._acceleration / 2);
 	},
 	set flockHeadingChange (value) {
 		this._flockHeadingChange = Math.max(value, 0);
@@ -257,26 +263,22 @@ Boyd.prototype.update = function (delta) {
 	var velocityDirection = currentVelocity.clone().normalize();
 	var crossZComponent;
 	
-	var speed = this.velocity.length();
-	var averageFriendlySpeed = this.friendlyVelocity.length() / this.numNeighborsThisFrame;
+	var speed = this.speed;
+	var averageFriendlySpeed;
+	var acceleration = this.modifiedAcceleration;
 
 	if (this.numPersonalSpaceIntruders !== 0) {
 
-		var averagePersonalSpaceIntruderPosition = this.personalSpaceIntruderPosition.multiplyScalar(1.0 / this.numPersonalSpaceIntruders);
+		var averagePersonalSpaceIntruderPosition = this.personalSpaceIntruderPosition.divideScalar(this.numPersonalSpaceIntruders);
 
-		var targetVector = this.mesh.position.clone().sub(averagePersonalSpaceIntruderPosition);
-		var targetVectorDirection = targetVector.normalize();
+		var targetVectorDirection = (new THREE.Vector3()).subVectors(this.mesh.position, averagePersonalSpaceIntruderPosition).normalize();
 		
 		crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, targetVectorDirection).z;
 
 		if (crossZComponent < 0) {
-			//turn right
 			this.turnRight(this.personalSpaceHeadingChange);
-			//this.turnRight();
 		} else if (crossZComponent > 0) {
-			//turn left
 			this.turnLeft(this.personalSpaceHeadingChange);
-			//this.turnLeft();
 		} else {
 			//we are either going the correct direction, or the opposite direction
 			//still need to figure this out
@@ -294,8 +296,7 @@ Boyd.prototype.update = function (delta) {
 		// and they seem to stay that way much longer unless we double (or similar) the turns
 		// that each boyd does for personal space intruders.
 
-		var averageFriendlyVelocity = this.friendlyVelocity.multiplyScalar(1.0 / this.numNeighborsThisFrame);
-		var averageFriendlyVelocityDirection = averageFriendlyVelocity.normalize();
+		var averageFriendlyVelocityDirection = this.friendlyVelocity.divideScalar(this.numNeighborsThisFrame).normalize();
 
 		crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, averageFriendlyVelocityDirection).z;
 
@@ -310,31 +311,25 @@ Boyd.prototype.update = function (delta) {
 			//still need to figure this out
 		}
 		
-		if (speed < (averageFriendlySpeed + this.targetSpeed) / 2) {
-			this.velocity.setLength(speed + this.acceleration + Math.random());
-		} else if (speed > (averageFriendlySpeed + this.targetSpeed) / 2) {
-			this.velocity.setLength(speed - this.acceleration - Math.random());
+		averageFriendlySpeed = this.friendlyVelocity.length() / this.numNeighborsThisFrame;
+		var adjustedTargetSpeed = (averageFriendlySpeed + this.targetSpeed) / 2;
+		
+		if (speed < adjustedTargetSpeed) {
+			this.velocity.setLength(speed + acceleration);
+		} else if (speed > adjustedTargetSpeed) {
+			this.velocity.setLength(speed - acceleration);
 		}
 
 	} else {
 		if (speed < this.targetSpeed) {
-			this.velocity.setLength(speed + this.acceleration + Math.random());
+			this.velocity.setLength(speed + acceleration);
 		} else if (speed > this.targetSpeed) {
-			this.velocity.setLength(speed - this.acceleration - Math.random());
+			this.velocity.setLength(speed - acceleration);
 		}
 	}
 
-	//the below scale values are slightly different so that (hopefully) an infinite
-	//oscillation doesn't occur around the targetVelocity.
-
-	// if (this.velocity.lengthSq() < this.targetVelocity * this.targetVelocity) {
-	// 	this.velocity.multiplyScalar(1.01);
-	// } else if (this.velocity.lengthSq() > this.targetVelocity * this.targetVelocity) {
-	// 	this.velocity.multiplyScalar(0.9);
-	// }
-
   	if (this.drawVelocityVector) {
-		this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(this.speed)];
+		this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(speed)];
 		this.vectorLine.geometry.verticesNeedUpdate = true;
   	}
 
@@ -348,16 +343,16 @@ Boyd.prototype.update = function (delta) {
 };
 
 Boyd.prototype.dist = function (otherBoyd) {
-	return otherBoyd.position.clone().sub(this._mesh.position).length();
+	return (new THREE.Vector3()).subVectors(otherBoyd.position, this._mesh.position).length();
 };
 
 Boyd.prototype.distSq = function(otherBoyd) {
-	return otherBoyd.position.clone().sub(this._mesh.position).lengthSq();
+	return (new THREE.Vector3()).subVectors(otherBoyd.position, this._mesh.position).lengthSq();
 };
 
 Boyd.prototype.distVector = function (otherBoyd) {
 	//+/- current position with width and height
 	//think about rollover
 
-	return otherBoyd.position.clone().sub(this._mesh.position);
+	return (new THREE.Vector3()).subVectors(otherBoyd.position, this._mesh.position);
 };

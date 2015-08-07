@@ -24,7 +24,7 @@ APP.main = (function main(THREE, Stats, $, simulation, config, util){
 		ZOOM_DELTA = 0.02,
 		CURRENT_ZOOM = 1,
 		MIN_ZOOM = 0.1,
-		MAX_ZOOM = 1.25;
+		MAX_ZOOM = 2;
 
 	// var squareMesh;
 
@@ -134,7 +134,7 @@ APP.main = (function main(THREE, Stats, $, simulation, config, util){
 	function update(delta) {
 
 		// squareMesh.rotation.z += delta * 0.001;
-		simulation.update(delta, 500, 750, -500, -750);
+		simulation.update(delta);
 
 		//console.log(boyd.mesh);
 

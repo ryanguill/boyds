@@ -1,8 +1,10 @@
 function Config (args) {
 	args = args || {};
-	this.preyCount = args.preyCount || 200;
+	this.preyCount = args.preyCount || 1000;
 	this.predatorCount = args.predatorCount || 0;
-
+	
+	this.simulationWidth = args.simulationWidth || 3000;
+	this.simulationHeight = args.simulationHeight || 1750;
 }
 
 Config.prototype = {

@@ -6,19 +6,30 @@ APP.simulation = (function simulation(util) {
     "use strict";
 
 	var state = {
+		top: 0,
+		right: 0,
+		bottom: 0,
+		left: 0,
 		boyds: []
 	};
 
 	function init (config, scene) {
-		var boyd;
-
-		var rand;
-		var avoidRangeSimilarVariance = 30,
-			minAvoidRangeSimilar = 15,
+		
+		console.log(config);
+		
+		state.top = config.simulationHeight / 2;
+		state.bottom = -config.simulationHeight / 2;
+		state.right = config.simulationWidth / 2;
+		state.left = -config.simulationWidth / 2;
+		
+		var boyd,
+			rand,
+			avoidRangeSimilarVariance = 30,
+			minAvoidRangeSimilar = 20,
 			influenceRangeVariance = 50,
 			minInfluenceRange = 50,
 			flockHeadingChangeVariance = 0,
-			minFlockHeadingChange = 2,
+			minFlockHeadingChange = 3,
 			personalSpaceHeadingChangeVariance = 0,
 			minPersonalSpaceHeadingChange = 4;
 
@@ -29,15 +40,14 @@ APP.simulation = (function simulation(util) {
 			rand =  Math.random();
 			boyd = new Boyd({
 				size: 25,
-				speed: 100 * rand + 50,
-				targetSpeed: 100,
-				acceleration: 1,
+				speed: 200 * rand + 50,
+				targetSpeed: 200,
+				acceleration: 2,
 				influenceRange: influenceRangeVariance * rand + minInfluenceRange,
 				avoidRangeSimilar: avoidRangeSimilarVariance * rand + minAvoidRangeSimilar,
 				avoidRangeDifferent: 200,
 				heading: 360 * Math.random(),
 				color: new THREE.Color(0x00ff00),
-				velocity: new THREE.Vector2(1, 0),
 				type: "PREY",
 				flockHeadingChange: flockHeadingChangeVariance * rand + minFlockHeadingChange,
 				personalSpaceHeadingChange: personalSpaceHeadingChangeVariance * rand + minPersonalSpaceHeadingChange,
@@ -49,8 +59,8 @@ APP.simulation = (function simulation(util) {
 			scene.add(boyd.mesh);
 
 			//randomize first position
-			boyd.mesh.translateX(Math.random() * 1000 - 500);
-			boyd.mesh.translateY(Math.random() * 1000 - 500);
+			boyd.mesh.translateX(Math.random() * config.simulationWidth - state.right);
+			boyd.mesh.translateY(Math.random() * config.simulationHeight - state.top);
 
 
 			state.boyds.push(boyd);
@@ -161,30 +171,31 @@ APP.simulation = (function simulation(util) {
 		
 	}
 
-	function update (delta, top, right, bottom, left) {
+	function update (delta) {
 
 		delta /= 1000;
 
 		var i = 0,
 			boyd,
+			otherBoyd,
 			boydsLen = state.boyds.length;
 
 		for (i = 0; i < boydsLen; i++) {
 			boyd = state.boyds[i];
 
 			for (var j = 0; j < boydsLen; j++) {
-				var otherBoyd = state.boyds[j];
+				otherBoyd = state.boyds[j];
 
 				if (otherBoyd !== boyd) {
 
-					var distVect = boyd.distVector(otherBoyd);
-					var distSq = distVect.lengthSq();
+					var distSq = boyd.distSq(otherBoyd);
 
                   	if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREY) {
 
                   		if (distSq < boyd.avoidRangeSimilarSq) {
 							boyd.addPersonalSpaceIntruder(otherBoyd.position);
-                  		} else if (distSq < boyd.influenceRangeSq) {
+                  		}
+						if (distSq < boyd.influenceRangeSq) {
 							boyd.addFriendlyVelocity(otherBoyd.velocity);
                   		}
                   		
@@ -199,16 +210,16 @@ APP.simulation = (function simulation(util) {
 			boyd.update(delta);
 
 			//wrap around
-			if (boyd.position.x >= right) {
-				boyd.position.x = left;
-			} else if (boyd.position.x < left) {
-				boyd.position.x = right;
+			if (boyd.position.x >= state.right) {
+				boyd.position.x = state.left;
+			} else if (boyd.position.x < state.left) {
+				boyd.position.x = state.right;
 			}
 
-			if (boyd.position.y >= top) {
-				boyd.position.y = bottom;
-			} else if (boyd.position.y < bottom) {
-				boyd.position.y = top;
+			if (boyd.position.y >= state.top) {
+				boyd.position.y = state.bottom;
+			} else if (boyd.position.y < state.bottom) {
+				boyd.position.y = state.top;
 			}
 		}
 	}
