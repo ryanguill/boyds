@@ -24,6 +24,10 @@ APP.simulation = (function simulation(util) {
 		
 		var boyd,
 			rand,
+			targetSpeedVariance = 50,
+			minTargetSpeed = 200,
+			accelerationVariance = 10,
+			minAcceleration = 2,
 			avoidRangeSimilarVariance = 10,
 			minAvoidRangeSimilar = 30,
 			influenceRangeVariance = 20,
@@ -31,7 +35,7 @@ APP.simulation = (function simulation(util) {
 			flockHeadingChangeVariance = 0,
 			minFlockHeadingChange = 3,
 			personalSpaceHeadingChangeVariance = 0,
-			minPersonalSpaceHeadingChange = 4;
+			minPersonalSpaceHeadingChange = 5;
 
 		for (var i = 0; i < config.preyCount; ++i) {
 
@@ -41,8 +45,8 @@ APP.simulation = (function simulation(util) {
 			boyd = new Boyd({
 				size: 25,
 				speed: 200 * rand + 50,
-				targetSpeed: 200,
-				acceleration: 2,
+				targetSpeed: targetSpeedVariance * rand + minTargetSpeed,
+				acceleration: accelerationVariance * rand + minAcceleration,
 				influenceRange: influenceRangeVariance * rand + minInfluenceRange,
 				avoidRangeSimilar: avoidRangeSimilarVariance * rand + minAvoidRangeSimilar,
 				avoidRangeDifferent: 200,

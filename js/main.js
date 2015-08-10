@@ -24,7 +24,7 @@ APP.main = (function main(THREE, Stats, $, simulation, config, util){
 		ZOOM_DELTA = 0.02,
 		CURRENT_ZOOM = 1,
 		MIN_ZOOM = 0.1,
-		MAX_ZOOM = 2;
+		MAX_ZOOM = 3;
 
 	// var squareMesh;
 
