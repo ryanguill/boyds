@@ -1,6 +1,6 @@
 function Config (args) {
 	args = args || {};
-	this.preyCount = args.preyCount || 1000;
+	this.preyCount = args.preyCount || 700;
 	this.predatorCount = args.predatorCount || 0;
 	
 	this.simulationWidth = args.simulationWidth || 3840;

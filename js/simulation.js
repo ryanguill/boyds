@@ -15,25 +15,37 @@ APP.simulation = (function simulation(util) {
 
 	function init (config, scene) {
 		
-		console.log(config);
-		
 		state.top = config.simulationHeight / 2;
 		state.bottom = -config.simulationHeight / 2;
 		state.right = config.simulationWidth / 2;
 		state.left = -config.simulationWidth / 2;
+		
+		var simulationBorderMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+		var simulationBorderGeometry = new THREE.Geometry();
+		simulationBorderGeometry.vertices.push(
+			new THREE.Vector3(state.left, state.top, 0),
+			new THREE.Vector3(state.right, state.top, 0),
+			new THREE.Vector3(state.right, state.bottom, 0),
+			new THREE.Vector3(state.left, state.bottom, 0),
+			new THREE.Vector3(state.left, state.top, 0)
+		);
+		
+		var simulationBorder = new THREE.Line(simulationBorderGeometry, simulationBorderMaterial);
+		
+		scene.add(simulationBorder);
 		
 		var boyd,
 			rand,
 			targetSpeedVariance = 50,
 			minTargetSpeed = 200,
 			accelerationVariance = 10,
-			minAcceleration = 2,
+			minAcceleration = 1,
 			avoidRangeSimilarVariance = 10,
 			minAvoidRangeSimilar = 30,
 			influenceRangeVariance = 20,
 			minInfluenceRange = 100,
 			flockHeadingChangeVariance = 0,
-			minFlockHeadingChange = 3,
+			minFlockHeadingChange = 4,
 			personalSpaceHeadingChangeVariance = 0,
 			minPersonalSpaceHeadingChange = 5;
 

@@ -22,7 +22,7 @@ APP.main = (function main(THREE, Stats, $, simulation, config, util){
 		HEIGHT = window.innerHeight,
 		CAMERA_Z = 1,
 		ZOOM_DELTA = 0.02,
-		CURRENT_ZOOM = 1,
+		CURRENT_ZOOM = 2.5,
 		MIN_ZOOM = 0.1,
 		MAX_ZOOM = 3;
 
