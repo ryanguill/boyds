@@ -14,7 +14,8 @@ function Boyd (args) {
 		DEFAULT_AVOID_RANGE_DIFFERENT = 0,
 		DEFAULT_ACCELERATION = 10,
 		DEFAULT_FLOCK_HEADING_CHANGE = 2,
-		DEFAULT_PERSONAL_SPACE_HEADING_CHANGE = 2;
+		DEFAULT_PERSONAL_SPACE_HEADING_CHANGE = 2,
+		DEFAULT_PREY_CHASE_HEADING_CHANGE = 2;
 
 
 	if (args.dataPrint) {
@@ -25,6 +26,7 @@ function Boyd (args) {
 	this.color = args.color || DEFAULT_COLOR;
 	var speed = args.speed || DEFAULT_SPEED;
 	var heading = args.heading || DEFAULT_HEADING; //degrees
+	this.targetSpeed = args.targetSpeed || DEFAULT_TARGET_SPEED;
 
 	this.velocity = (new THREE.Vector3(Math.cos(heading * Math.PI / 180), Math.sin(heading * Math.PI / 180), 0)).multiplyScalar(speed);
 
@@ -32,13 +34,16 @@ function Boyd (args) {
 	this.acceleration = args.acceleration || DEFAULT_ACCELERATION;
 	this.flockHeadingChange = args.flockHeadingChange || DEFAULT_FLOCK_HEADING_CHANGE;
 	this.personalSpaceHeadingChange = args.personalSpaceHeadingChange || DEFAULT_PERSONAL_SPACE_HEADING_CHANGE;
+	this.preyChaseHeadingChange = args.preyChaseHeadingChange || DEFAULT_PREY_CHASE_HEADING_CHANGE;
 
-	this.velocityOffset = new THREE.Vector3(0,0,0);
 	this.friendlyVelocity = new THREE.Vector3(0,0,0);
-	this.personalSpaceIntruderPosition = new THREE.Vector3(0,0,0);
 	this.numNeighborsThisFrame = 0;
-	this.numPersonalSpaceIntruders = 0;
-	this.targetSpeed = args.targetSpeed || DEFAULT_TARGET_SPEED;
+	this.personalSpaceIntruderPosition = new THREE.Vector3(0,0,0);
+	this.numPersonalSpaceIntrudersThisFrame = 0;
+	this.predatorPosition = new THREE.Vector3(0,0,0);
+	this.numPredatorsThisFrame = 0;
+	this.preyPosition = new THREE.Vector3(0,0,0);
+	this.numPreyThisFrame = 0;
 
 	this.type = args.type || this.PREY;
 
@@ -224,6 +229,12 @@ Boyd.prototype = {
 	},
 	get personalSpaceHeadingChange () {
 		return this._personalSpaceHeadingChange;
+	},
+	set preyChaseHeadingChange (value) {
+		this._preyChaseHeadingChange = Math.max(value, 0);
+	},
+	get preyChaseHeadingChange () {
+		return this._preyChaseHeadingChange;
 	}
 };
 
@@ -243,7 +254,17 @@ Boyd.prototype.addFriendlyVelocity = function (velocity) {
 
 Boyd.prototype.addPersonalSpaceIntruder = function (position) {
 	this.personalSpaceIntruderPosition.add(position);
-	this.numPersonalSpaceIntruders++;
+	this.numPersonalSpaceIntrudersThisFrame++;
+};
+
+Boyd.prototype.addPredatorPosition = function (position) {
+	this.predatorPosition.add(position);
+	this.numPredatorsThisFrame++;
+};
+
+Boyd.prototype.addPreyPosition = function (position) {
+	this.preyPosition.add(position);
+	this.numPreyThisFrame++;
 };
 
 Boyd.prototype.getLeftTurnUnitVector = function () {
@@ -262,71 +283,129 @@ Boyd.prototype.update = function (delta) {
 	var currentVelocity = this.velocity.clone();
 	var velocityDirection = currentVelocity.clone().normalize();
 	var crossZComponent;
+	var averagePersonalSpaceIntruderPosition;
+	var targetVectorDirection;
+	var averageFriendlyVelocityDirection;
+	var adjustedTargetSpeed;
+	var averagePredatorPosition;
+	var averagePreyPosition;
 	
 	var speed = this.speed;
 	var averageFriendlySpeed;
 	var acceleration = this.modifiedAcceleration;
+	
 
-	if (this.numPersonalSpaceIntruders !== 0) {
-
-		var averagePersonalSpaceIntruderPosition = this.personalSpaceIntruderPosition.divideScalar(this.numPersonalSpaceIntruders);
-
-		var targetVectorDirection = (new THREE.Vector3()).subVectors(this.mesh.position, averagePersonalSpaceIntruderPosition).normalize();
+	if (this.type === this.PREY) {
 		
-		crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, targetVectorDirection).z;
-
-		if (crossZComponent < 0) {
-			this.turnRight(this.personalSpaceHeadingChange);
-		} else if (crossZComponent > 0) {
-			this.turnLeft(this.personalSpaceHeadingChange);
+		if (this.numPredatorsThisFrame !== 0) {
+			averagePredatorPosition = this.predatorPosition.divideScalar(this.numPredatorsThisFrame);
+		
+			targetVectorDirection = (new THREE.Vector3()).subVectors(this.mesh.position, averagePredatorPosition).normalize();
+			
+			crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, targetVectorDirection).z;
+	
+			if (crossZComponent < 0) {
+				this.turnRight(this.personalSpaceHeadingChange + 10);
+			} else if (crossZComponent > 0) {
+				this.turnLeft(this.personalSpaceHeadingChange + 10);
+			} else {
+				//we are either going the correct direction, or the opposite direction
+				//still need to figure this out
+			}
+			
+			this.velocity.setLength(speed + acceleration);
+			
 		} else {
-			//we are either going the correct direction, or the opposite direction
-			//still need to figure this out
+			if (this.numPersonalSpaceIntrudersThisFrame !== 0) {
+
+				averagePersonalSpaceIntruderPosition = this.personalSpaceIntruderPosition.divideScalar(this.numPersonalSpaceIntrudersThisFrame);
+		
+				targetVectorDirection = (new THREE.Vector3()).subVectors(this.mesh.position, averagePersonalSpaceIntruderPosition).normalize();
+				
+				crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, targetVectorDirection).z;
+		
+				if (crossZComponent < 0) {
+					this.turnRight(this.personalSpaceHeadingChange);
+				} else if (crossZComponent > 0) {
+					this.turnLeft(this.personalSpaceHeadingChange);
+				} else {
+					//we are either going the correct direction, or the opposite direction
+					//still need to figure this out
+				}
+			}
+			if (this.numNeighborsThisFrame !== 0) {
+				// TODO: IWB @paul @ryan - Consider the following:
+				// Not sure if the above should be an 'else if' or not:
+				
+				// I feel like having an 'else if' is contributing to the situations where we have a boyd
+				// going against the grain and won't turn around because they keep hitting
+				// other boyds' personal spaces.
+				
+				// But on the other hand, having just another 'if' makes them clump up much quicker
+				// and they seem to stay that way much longer unless we double (or similar) the turns
+				// that each boyd does for personal space intruders.
+		
+				averageFriendlyVelocityDirection = this.friendlyVelocity.divideScalar(this.numNeighborsThisFrame).normalize();
+		
+				crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, averageFriendlyVelocityDirection).z;
+		
+				if (crossZComponent < 0) {
+					//turn right
+					this.turnRight(this.flockHeadingChange);
+				} else if (crossZComponent > 0) {
+					//turn left
+					this.turnLeft(this.flockHeadingChange);
+				} else {
+					//we are either going the correct direction, or the opposite direction
+					//still need to figure this out
+				}
+				
+				averageFriendlySpeed = this.friendlyVelocity.length() / this.numNeighborsThisFrame;
+				adjustedTargetSpeed = (averageFriendlySpeed + this.targetSpeed) / 2;
+				
+				if (speed < adjustedTargetSpeed) {
+					this.velocity.setLength(speed + acceleration);
+				} else if (speed > adjustedTargetSpeed) {
+					this.velocity.setLength(speed - acceleration);
+				}
+		
+			} else {
+				if (speed < this.targetSpeed) {
+					this.velocity.setLength(speed + acceleration);
+				} else if (speed > this.targetSpeed) {
+					this.velocity.setLength(speed - acceleration);
+				}
+			}
+		}
+		
+	} else if (this.type === this.PREDATOR) {
+		if (this.numPreyThisFrame !== 0) {
+
+			averagePreyPosition = this.preyPosition.divideScalar(this.numPreyThisFrame);
+	
+			targetVectorDirection = (new THREE.Vector3()).subVectors(averagePreyPosition, this.mesh.position).normalize();
+			
+			crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, targetVectorDirection).z;
+	
+			if (crossZComponent < 0) {
+				this.turnRight(this.preyChaseHeadingChange);
+			} else if (crossZComponent > 0) {
+				this.turnLeft(this.preyChaseHeadingChange);
+			} else {
+				//we are either going the correct direction, or the opposite direction
+				//still need to figure this out
+			}
+			
+			this.velocity.setLength(speed + acceleration);
+			
+			if (speed < this.targetSpeed) {
+				this.velocity.setLength(speed + acceleration);
+			} else if (speed > this.targetSpeed) {
+				this.velocity.setLength(speed - acceleration);
+			}
 		}
 	}
-	if (this.numNeighborsThisFrame !== 0) {
-		// TODO: IWB @paul @ryan - Consider the following:
-		// Not sure if the above should be an 'else if' or not:
-		
-		// I feel like having an 'else if' is contributing to the situations where we have a boyd
-		// going against the grain and won't turn around because they keep hitting
-		// other boyds' personal spaces.
-		
-		// But on the other hand, having just another 'if' makes them clump up much quicker
-		// and they seem to stay that way much longer unless we double (or similar) the turns
-		// that each boyd does for personal space intruders.
-
-		var averageFriendlyVelocityDirection = this.friendlyVelocity.divideScalar(this.numNeighborsThisFrame).normalize();
-
-		crossZComponent = (new THREE.Vector3()).crossVectors(velocityDirection, averageFriendlyVelocityDirection).z;
-
-		if (crossZComponent < 0) {
-			//turn right
-			this.turnRight(this.flockHeadingChange);
-		} else if (crossZComponent > 0) {
-			//turn left
-			this.turnLeft(this.flockHeadingChange);
-		} else {
-			//we are either going the correct direction, or the opposite direction
-			//still need to figure this out
-		}
-		
-		averageFriendlySpeed = this.friendlyVelocity.length() / this.numNeighborsThisFrame;
-		var adjustedTargetSpeed = (averageFriendlySpeed + this.targetSpeed) / 2;
-		
-		if (speed < adjustedTargetSpeed) {
-			this.velocity.setLength(speed + acceleration);
-		} else if (speed > adjustedTargetSpeed) {
-			this.velocity.setLength(speed - acceleration);
-		}
-
-	} else {
-		if (speed < this.targetSpeed) {
-			this.velocity.setLength(speed + acceleration);
-		} else if (speed > this.targetSpeed) {
-			this.velocity.setLength(speed - acceleration);
-		}
-	}
+	
 
   	if (this.drawVelocityVector) {
 		this.vectorLine.geometry.vertices = [new THREE.Vector3(), new THREE.Vector3(1, 0, 0).multiplyScalar(speed)];
@@ -337,9 +416,13 @@ Boyd.prototype.update = function (delta) {
 	this.mesh.rotation.z = Math.atan2(this.velocity.y, this.velocity.x);
 
 	this.friendlyVelocity = new THREE.Vector3(0,0,0);
-	this.personalSpaceIntruderPosition = new THREE.Vector3(0,0,0);
 	this.numNeighborsThisFrame = 0;
-	this.numPersonalSpaceIntruders = 0;
+	this.personalSpaceIntruderPosition = new THREE.Vector3(0,0,0);
+	this.numPersonalSpaceIntrudersThisFrame = 0;
+	this.predatorPosition = new THREE.Vector3(0,0,0);
+	this.numPredatorsThisFrame = 0;
+	this.preyPosition = new THREE.Vector3(0,0,0);
+	this.numPreyThisFrame = 0;
 };
 
 Boyd.prototype.dist = function (otherBoyd) {

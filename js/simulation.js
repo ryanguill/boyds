@@ -20,34 +20,24 @@ APP.simulation = (function simulation(util) {
 		state.right = config.simulationWidth / 2;
 		state.left = -config.simulationWidth / 2;
 		
-		var simulationBorderMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
-		var simulationBorderGeometry = new THREE.Geometry();
-		simulationBorderGeometry.vertices.push(
-			new THREE.Vector3(state.left, state.top, 0),
-			new THREE.Vector3(state.right, state.top, 0),
-			new THREE.Vector3(state.right, state.bottom, 0),
-			new THREE.Vector3(state.left, state.bottom, 0),
-			new THREE.Vector3(state.left, state.top, 0)
-		);
-		
-		var simulationBorder = new THREE.Line(simulationBorderGeometry, simulationBorderMaterial);
-		
-		scene.add(simulationBorder);
+		setupSimulationBorder(scene);
 		
 		var boyd,
 			rand,
 			targetSpeedVariance = 50,
 			minTargetSpeed = 200,
-			accelerationVariance = 10,
-			minAcceleration = 1,
+			accelerationVariance = 0,
+			minAcceleration = 5,
 			avoidRangeSimilarVariance = 10,
 			minAvoidRangeSimilar = 30,
 			influenceRangeVariance = 20,
-			minInfluenceRange = 100,
+			minInfluenceRange = 150,
 			flockHeadingChangeVariance = 0,
 			minFlockHeadingChange = 4,
 			personalSpaceHeadingChangeVariance = 0,
-			minPersonalSpaceHeadingChange = 5;
+			minPersonalSpaceHeadingChange = 5,
+			preyChaseHeadingChangeVariance = 0,
+			minPreyChaseHeadingChange = 5;
 
 		for (var i = 0; i < config.preyCount; ++i) {
 
@@ -81,22 +71,44 @@ APP.simulation = (function simulation(util) {
 
 			state.boyds.push(boyd);
 		}
-
+		
+		
+		
+		targetSpeedVariance = 0;
+		minTargetSpeed = 300;
+		accelerationVariance = 0;
+		minAcceleration = 6;
+		avoidRangeSimilarVariance = 0;
+		minAvoidRangeSimilar = 30;
+		influenceRangeVariance = 0;
+		minInfluenceRange = 200;
+		flockHeadingChangeVariance = 0;
+		minFlockHeadingChange = 4;
+		personalSpaceHeadingChangeVariance = 0;
+		minPersonalSpaceHeadingChange = 5;
+		preyChaseHeadingChangeVariance = 0;
+		minPreyChaseHeadingChange = 10;
+		
 		for (var j = 0; j < config.predatorCount; ++j) {
 
-			//new THREE.Color(Math.random(), Math.random(), Math.random()),
+			rand =  Math.random();
 			boyd = new Boyd({
-				size: 35,
-				speed: 200 * Math.random(),
-				influenceRange: 600,
-				avoidRangeSimilar: 25,
-				avoidRangeDifferent: 0,
-				heading: -180 * Math.random(),
+				size: 40,
+				speed: 200 * rand + 50,
+				targetSpeed: targetSpeedVariance * rand + minTargetSpeed,
+				acceleration: accelerationVariance * rand + minAcceleration,
+				influenceRange: influenceRangeVariance * rand + minInfluenceRange,
+				avoidRangeSimilar: avoidRangeSimilarVariance * rand + minAvoidRangeSimilar,
+				avoidRangeDifferent: 200,
+				heading: 360 * Math.random(),
 				color: new THREE.Color(0xff0000),
-				velocity: new THREE.Vector2(1, 0),
 				type: "PREDATOR",
-				acceleration: 15,
-				headingChange: 3
+				flockHeadingChange: flockHeadingChangeVariance * rand + minFlockHeadingChange,
+				personalSpaceHeadingChange: personalSpaceHeadingChangeVariance * rand + minPersonalSpaceHeadingChange,
+				preyChaseHeadingChange: preyChaseHeadingChangeVariance * rand + minPreyChaseHeadingChange,
+				drawInfluenceRange: false,
+				drawAvoidRangeSimilar: false,
+				drawVelocityVector: false
 			});
 
 			scene.add(boyd.mesh);
@@ -215,7 +227,19 @@ APP.simulation = (function simulation(util) {
 							boyd.addFriendlyVelocity(otherBoyd.velocity);
                   		}
                   		
-                  	}
+                  	} else if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREDATOR) {
+						
+						if (distSq < boyd.avoidRangeDifferentSq) {
+							boyd.addPredatorPosition(otherBoyd.position);
+						}
+							  
+					} else if (boyd.type === boyd.PREDATOR && otherBoyd.type === boyd.PREY) {
+						
+						if (distSq < boyd.influenceRangeSq) { // not sure if this is the correct range for this
+							boyd.addPreyPosition(otherBoyd.position);
+						}
+						
+					}
 				}
 			}
 		}
@@ -239,7 +263,23 @@ APP.simulation = (function simulation(util) {
 			}
 		}
 	}
-
+	
+	function setupSimulationBorder(scene) {
+		
+		var simulationBorderMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+		var simulationBorderGeometry = new THREE.Geometry();
+		simulationBorderGeometry.vertices.push(
+			new THREE.Vector3(state.left, state.top, 0),
+			new THREE.Vector3(state.right, state.top, 0),
+			new THREE.Vector3(state.right, state.bottom, 0),
+			new THREE.Vector3(state.left, state.bottom, 0),
+			new THREE.Vector3(state.left, state.top, 0)
+		);
+		
+		var simulationBorder = new THREE.Line(simulationBorderGeometry, simulationBorderMaterial);
+		
+		scene.add(simulationBorder);
+	}
 
     return {
 	    init: init,
