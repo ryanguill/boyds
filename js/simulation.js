@@ -211,7 +211,7 @@ APP.simulation = (function simulation(util) {
 		for (i = 0; i < boydsLen; i++) {
 			boyd = state.boyds[i];
 
-			for (var j = 0; j < boydsLen; j++) {
+			for (var j =  i + 1; j < boydsLen; j++) {
 				otherBoyd = state.boyds[j];
 
 				if (otherBoyd !== boyd) {
@@ -221,27 +221,51 @@ APP.simulation = (function simulation(util) {
                   	if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREY) {
 
                   		if (distSq < boyd.avoidRangeSimilarSq) {
+							//this prey avoids that prey
 							boyd.addPersonalSpaceIntruder(otherBoyd.position);
                   		}
+						if (distSq < otherBoyd.avoidRangeSimilarSq) {
+							//that prey avoids this prey
+							otherBoyd.addPersonalSpaceIntruder(boyd.position);
+						}
+						
 						if (distSq < boyd.influenceRangeSq) {
+							//this prey flocks with that prey
 							boyd.addFriendlyVelocity(otherBoyd.velocity);
                   		}
+						if (distSq < otherBoyd.influenceRangeSq) {
+							//that prey flocks with this prey
+							otherBoyd.addFriendlyVelocity(boyd.velocity);
+						}
                   		
                   	} else if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREDATOR) {
 						
 						if (distSq < boyd.avoidRangeDifferentSq) {
+							//this prey detects that predator
 							boyd.addPredatorPosition(otherBoyd.position);
 						}
-							  
+						
+						if (distSq < otherBoyd.avoidRangeSimilarSq) {
+							//that predator kills this prey
+							boyd.isDead = true;
+						} else if (distSq < otherBoyd.influenceRangeSq) { // not sure if this is the correct range for this
+							//that predator detects this prey
+							otherBoyd.addPreyPosition(boyd.position);
+						}
 					} else if (boyd.type === boyd.PREDATOR && otherBoyd.type === boyd.PREY) {
 						
-						if (distSq < boyd.avoidRangeSimilarSq) {
-							otherBoyd.isDead = true;
-						}
-						if (distSq < boyd.influenceRangeSq) { // not sure if this is the correct range for this
-							boyd.addPreyPosition(otherBoyd.position);
+						if (distSq < boyd.avoidRangeDifferentSq) {
+							//that prey detects this predator
+							otherBoyd.addPredatorPosition(boyd.position);
 						}
 						
+						if (distSq < boyd.avoidRangeSimilarSq) {
+							//this predator kills that prey
+							otherBoyd.isDead = true;
+						} else if (distSq < boyd.influenceRangeSq) { // not sure if this is the correct range for this
+							//this predator detects that prey
+							boyd.addPreyPosition(otherBoyd.position);
+						}
 					}
 				}
 			}
