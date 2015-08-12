@@ -134,7 +134,7 @@ APP.main = (function main(THREE, Stats, $, simulation, config, util){
 	function update(delta) {
 
 		// squareMesh.rotation.z += delta * 0.001;
-		simulation.update(delta);
+		simulation.update(delta, scene);
 
 		//console.log(boyd.mesh);
 

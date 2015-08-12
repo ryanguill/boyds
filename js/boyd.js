@@ -106,7 +106,7 @@ function Boyd (args) {
 	
 	this._positiveZVector = new THREE.Vector3(0, 0, 1);
 	this._leftRotationRadians = 90 * Math.PI / 180;
-	
+	this.isDead = false;
 }
 
 
@@ -235,6 +235,12 @@ Boyd.prototype = {
 	},
 	get preyChaseHeadingChange () {
 		return this._preyChaseHeadingChange;
+	},
+	set isDead (value) {
+		this._isDead = value;
+	},
+	get isDead () {
+		return this._isDead;
 	}
 };
 

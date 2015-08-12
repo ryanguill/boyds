@@ -199,7 +199,7 @@ APP.simulation = (function simulation(util) {
 		
 	}
 
-	function update (delta) {
+	function update (delta, scene) {
 
 		delta /= 1000;
 
@@ -235,6 +235,9 @@ APP.simulation = (function simulation(util) {
 							  
 					} else if (boyd.type === boyd.PREDATOR && otherBoyd.type === boyd.PREY) {
 						
+						if (distSq < boyd.avoidRangeSimilarSq) {
+							otherBoyd.isDead = true;
+						}
 						if (distSq < boyd.influenceRangeSq) { // not sure if this is the correct range for this
 							boyd.addPreyPosition(otherBoyd.position);
 						}
@@ -244,24 +247,33 @@ APP.simulation = (function simulation(util) {
 			}
 		}
 
+		var newBoydsArray = [];
+		
 		for (i = 0; i < boydsLen; i++) {
 			boyd = state.boyds[i];
-
-			boyd.update(delta);
-
-			//wrap around
-			if (boyd.position.x >= state.right) {
-				boyd.position.x = state.left;
-			} else if (boyd.position.x < state.left) {
-				boyd.position.x = state.right;
-			}
-
-			if (boyd.position.y >= state.top) {
-				boyd.position.y = state.bottom;
-			} else if (boyd.position.y < state.bottom) {
-				boyd.position.y = state.top;
+			
+			if (boyd.isDead) {
+				scene.remove(boyd.mesh);
+			} else {
+				boyd.update(delta)
+				newBoydsArray.push(boyd);
+				
+				//wrap around
+				if (boyd.position.x >= state.right) {
+					boyd.position.x = state.left;
+				} else if (boyd.position.x < state.left) {
+					boyd.position.x = state.right;
+				}
+	
+				if (boyd.position.y >= state.top) {
+					boyd.position.y = state.bottom;
+				} else if (boyd.position.y < state.bottom) {
+					boyd.position.y = state.top;
+				}
 			}
 		}
+		
+		state.boyds = newBoydsArray;
 	}
 	
 	function setupSimulationBorder(scene) {
