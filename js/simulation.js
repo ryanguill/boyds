@@ -75,7 +75,7 @@ APP.simulation = (function simulation(util) {
 		
 		
 		targetSpeedVariance = 0;
-		minTargetSpeed = 300;
+		minTargetSpeed = 200;
 		accelerationVariance = 0;
 		minAcceleration = 6;
 		avoidRangeSimilarVariance = 0;
@@ -214,58 +214,55 @@ APP.simulation = (function simulation(util) {
 			for (var j =  i + 1; j < boydsLen; j++) {
 				otherBoyd = state.boyds[j];
 
-				if (otherBoyd !== boyd) {
+				var distSq = boyd.distSq(otherBoyd);
 
-					var distSq = boyd.distSq(otherBoyd);
+				if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREY) {
 
-                  	if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREY) {
-
-                  		if (distSq < boyd.avoidRangeSimilarSq) {
-							//this prey avoids that prey
-							boyd.addPersonalSpaceIntruder(otherBoyd.position);
-                  		}
-						if (distSq < otherBoyd.avoidRangeSimilarSq) {
-							//that prey avoids this prey
-							otherBoyd.addPersonalSpaceIntruder(boyd.position);
-						}
-						
-						if (distSq < boyd.influenceRangeSq) {
-							//this prey flocks with that prey
-							boyd.addFriendlyVelocity(otherBoyd.velocity);
-                  		}
-						if (distSq < otherBoyd.influenceRangeSq) {
-							//that prey flocks with this prey
-							otherBoyd.addFriendlyVelocity(boyd.velocity);
-						}
-                  		
-                  	} else if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREDATOR) {
-						
-						if (distSq < boyd.avoidRangeDifferentSq) {
-							//this prey detects that predator
-							boyd.addPredatorPosition(otherBoyd.position);
-						}
-						
-						if (distSq < otherBoyd.avoidRangeSimilarSq) {
-							//that predator kills this prey
-							boyd.isDead = true;
-						} else if (distSq < otherBoyd.influenceRangeSq) { // not sure if this is the correct range for this
-							//that predator detects this prey
-							otherBoyd.addPreyPosition(boyd.position);
-						}
-					} else if (boyd.type === boyd.PREDATOR && otherBoyd.type === boyd.PREY) {
-						
-						if (distSq < boyd.avoidRangeDifferentSq) {
-							//that prey detects this predator
-							otherBoyd.addPredatorPosition(boyd.position);
-						}
-						
-						if (distSq < boyd.avoidRangeSimilarSq) {
-							//this predator kills that prey
-							otherBoyd.isDead = true;
-						} else if (distSq < boyd.influenceRangeSq) { // not sure if this is the correct range for this
-							//this predator detects that prey
-							boyd.addPreyPosition(otherBoyd.position);
-						}
+					if (distSq < boyd.avoidRangeSimilarSq) {
+						//this prey avoids that prey
+						boyd.addPersonalSpaceIntruder(otherBoyd.position);
+					}
+					if (distSq < otherBoyd.avoidRangeSimilarSq) {
+						//that prey avoids this prey
+						otherBoyd.addPersonalSpaceIntruder(boyd.position);
+					}
+					
+					if (distSq < boyd.influenceRangeSq) {
+						//this prey flocks with that prey
+						boyd.addFriendlyVelocity(otherBoyd.velocity);
+					}
+					if (distSq < otherBoyd.influenceRangeSq) {
+						//that prey flocks with this prey
+						otherBoyd.addFriendlyVelocity(boyd.velocity);
+					}
+					
+				} else if (boyd.type === boyd.PREY && otherBoyd.type === boyd.PREDATOR) {
+					
+					if (distSq < boyd.avoidRangeDifferentSq) {
+						//this prey detects that predator
+						boyd.addPredatorPosition(otherBoyd.position);
+					}
+					
+					if (distSq < otherBoyd.avoidRangeSimilarSq) {
+						//that predator kills this prey
+						boyd.isDead = true;
+					} else if (distSq < otherBoyd.influenceRangeSq) { // not sure if this is the correct range for this
+						//that predator detects this prey
+						otherBoyd.addPreyPosition(boyd.position);
+					}
+				} else if (boyd.type === boyd.PREDATOR && otherBoyd.type === boyd.PREY) {
+					
+					if (distSq < boyd.avoidRangeDifferentSq) {
+						//that prey detects this predator
+						otherBoyd.addPredatorPosition(boyd.position);
+					}
+					
+					if (distSq < boyd.avoidRangeSimilarSq) {
+						//this predator kills that prey
+						otherBoyd.isDead = true;
+					} else if (distSq < boyd.influenceRangeSq) { // not sure if this is the correct range for this
+						//this predator detects that prey
+						boyd.addPreyPosition(otherBoyd.position);
 					}
 				}
 			}

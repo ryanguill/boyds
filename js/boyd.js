@@ -9,14 +9,13 @@ function Boyd (args) {
 		DEFAULT_SPEED = 200,
 		DEFAULT_TARGET_SPEED = 200,
 		DEFAULT_HEADING = 0,
+		DEFAULT_ACCELERATION = 10,
 		DEFAULT_INFLUENCE_RANGE = 100,
 		DEFAULT_AVOID_RANGE_SIMILAR = 25,
 		DEFAULT_AVOID_RANGE_DIFFERENT = 0,
-		DEFAULT_ACCELERATION = 10,
 		DEFAULT_FLOCK_HEADING_CHANGE = 2,
 		DEFAULT_PERSONAL_SPACE_HEADING_CHANGE = 2,
 		DEFAULT_PREY_CHASE_HEADING_CHANGE = 2;
-
 
 	if (args.dataPrint) {
 		this.dataPrint = args.dataPrint;
@@ -285,6 +284,14 @@ Boyd.prototype.turnRight = function (magnitude) {
 	this.turnLeft(-magnitude);
 };
 
+Boyd.prototype.speedUp = function () {
+	this.velocity.setLength(this.speed + this.acceleration);
+};
+
+Boyd.prototype.slowDown = function () {
+	this.velocity.setLength(this.speed - this.acceleration);
+};
+
 Boyd.prototype.update = function (delta) {
 	var currentVelocity = this.velocity.clone();
 	var velocityDirection = currentVelocity.clone().normalize();
@@ -298,8 +305,7 @@ Boyd.prototype.update = function (delta) {
 	
 	var speed = this.speed;
 	var averageFriendlySpeed;
-	var acceleration = this.modifiedAcceleration;
-	
+	//var acceleration = this.modifiedAcceleration;
 
 	if (this.type === this.PREY) {
 		
@@ -319,7 +325,7 @@ Boyd.prototype.update = function (delta) {
 				//still need to figure this out
 			}
 			
-			this.velocity.setLength(speed + acceleration);
+			this.speedUp();
 			
 		} else {
 			if (this.numPersonalSpaceIntrudersThisFrame !== 0) {
@@ -370,16 +376,16 @@ Boyd.prototype.update = function (delta) {
 				adjustedTargetSpeed = (averageFriendlySpeed + this.targetSpeed) / 2;
 				
 				if (speed < adjustedTargetSpeed) {
-					this.velocity.setLength(speed + acceleration);
+					this.speedUp();
 				} else if (speed > adjustedTargetSpeed) {
-					this.velocity.setLength(speed - acceleration);
+					this.slowDown();
 				}
 		
 			} else {
 				if (speed < this.targetSpeed) {
-					this.velocity.setLength(speed + acceleration);
+					this.speedUp();
 				} else if (speed > this.targetSpeed) {
-					this.velocity.setLength(speed - acceleration);
+					this.slowDown();
 				}
 			}
 		}
@@ -402,12 +408,12 @@ Boyd.prototype.update = function (delta) {
 				//still need to figure this out
 			}
 			
-			this.velocity.setLength(speed + acceleration);
+			this.speedUp();
 			
 			if (speed < this.targetSpeed) {
-				this.velocity.setLength(speed + acceleration);
+				this.speedUp();
 			} else if (speed > this.targetSpeed) {
-				this.velocity.setLength(speed - acceleration);
+				this.slowDown();
 			}
 		}
 	}
